@@ -162,3 +162,69 @@ https://www.udemy.com/docker-mastery/learn/v4/questions/3710518
 
 #### Custom Docker Networks, macvlan and IP setting hardcoding
 https://www.udemy.com/docker-mastery/learn/v4/questions/3706540
+
+## Setting up Docker
+### Installing the right Docker
+- [Open Container Initiative](https://opencontainers.org/)
+- [Docker Desktop](https://docs.docker.com/desktop/)
+- [Local container runtimes in 2024, tools for running containers for local dev
+](https://docs.google.com/spreadsheets/d/1ZT8m4gpvh6xhHYIi4Ui19uHcMpymwFXpTAvd3EcgSm4/edit?gid=0#gid=0)
+
+- 3 major ways to run containers
+  - Locally(Docker Desktop, RD)
+  - Servers(Docekr Engine, K8s)
+  - Paas(Cloud Run, Fargate)
+  
+### Instaling Docker The Fast way
+#### Installing on Windows 10 and Windows 11 (any Edition)
+- https://docs.docker.com/desktop/windows/install/
+
+- This is the best experience on Windows, which uses WSL2. If you're new to WSL2, it's the best way to run Linux on Windows, and Docker Desktop will walk you through enabling it. Docker can technically still work on Hyper-V with "Windows Containers," but most of this course focuses on Linux Containers, which WSL2 is great at.
+
+- After installing Docker Desktop for Windows. It is recommended installing a Windows Store Ubuntu for WSL2 distro and using its shell in Windows Terminal is the best CLI experience! Make sure to check your Docker Desktop settings to give it enough resources and enable all your WSL2 distros for Docker Desktop.
+
+#### Installing on Windows 7 or Windows 8
+- Docker Desktop don't work in these older versions. You'll need to use Hyper-V or install VirtualBox and manually setup a Linux VM.
+
+#### Installing on Linux Desktop
+
+- https://docs.docker.com/desktop/linux/install/
+- Installing on Linux Server https://docs.docker.com/engine/install/
+
+- Do *not* use your built-in default packages  apt/yum install docker.io because those packages are old and not the Official Docker-Built packages. 
+
+- Prefer to use Docker's automated script to add their repository and install all dependencies: curl -sSL https://get.docker.com/ | sh  but you can also install in a more manual method by following specific instructions that Docker provides for your Linux distribution.
+
+#### Use Play With Docker
+- https://labs.play-with-docker.com/
+
+- When you don't have local admin, or maybe your machine doesn't have enough resources. The best free option here is to use play-with-docker.com, which will run one or more Docker instances inside your browser, and give you a terminal to use it with. You can create multiple machines on it and even use the URL to share the session with others in a sort of collaborative experience.
+### Docker for Windows: Setup and Tips
+- [Install Docker Desktop on Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+  - Use WSL2 instead of Hyper-V
+  - Add shortcut to desktop
+  - Docker desktop / Configuration / Resources / WSL Integration - check **Enable integration with my default WSL distro**
+  - Go to Windows Store and download Ubuntu for WSL
+  - [Course GitHub Repo](https://github.com/BretFisher/udemy-docker-mastery)
+  
+### Docker for Linux Desktop: Setup and Tips
+- [Install Docker Desktop on Linux](https://docs.docker.com/desktop/setup/install/linux/)
+- [Course GitHub Repo](https://github.com/BretFisher/udemy-docker-mastery)
+- Tips
+  - point **Resources File Sharing** to `/home`.
+  
+### Docker for Linux Server: Setup and Tips
+- [Install Docker Engine on Linux](https://docs.docker.com/engine/install/)
+- Tips:
+  - for installing you can also use a script.
+```
+curl -fsSL https:// get.docker.com -o get-docker.sh
+sh get-docker.sh
+```
+  - command line `apt install docker-ce-cli`
+  - connecting docker servers from a commandline: 
+    - set DOCKER_HOST `export DOCKER_HOST=ssh://root@143.244.158.151`
+    
+### VS Code for DevOps, Docker and YAML Editing
+- [Docker Extension Pack for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker)
+- [Visual Studio Code Kubernetes Tools]()
