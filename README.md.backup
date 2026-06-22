@@ -227,4 +227,355 @@ sh get-docker.sh
     
 ### VS Code for DevOps, Docker and YAML Editing
 - [Docker Extension Pack for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker)
-- [Visual Studio Code Kubernetes Tools]()
+- [Visual Studio Code Kubernetes Tools](https://marketplace.visualstudio.com/items?itemName=ms-kubernetes-tools.vscode-kubernetes-tools)
+- [Microsoft Visual Studio Live Share](https://marketplace.visualstudio.com/items?itemName=MS-vsliveshare.vsliveshare)
+- [Visual Studio Code Remote Development Extension Pack](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
+## Creating and using containers
+### Checking Docker install and config
+
+```
+#verified cli can talk to engine
+docker version
+
+#most config values of engine
+docker info
+
+docker
+
+docker container run
+
+docker run
+```
+- The newest format `docker <management_command> <subcommand> (options)`
+
+### Starting a Nginx Web Server
+- An Image is the application we want to run (bins, libs, source code)
+- A Container is an instance of that image running as a process
+- Docker's default image "registry" is called Docker Hub
+(hub.docker.com)
+- `run` start a new container, `start` starts existing stopped one.
+```
+docker container run --publish 80:80 nginx
+# run in the background, terminal is not blocked
+docker container run --publish 80:80 --detach nginx
+
+docker container ls
+
+docker container stop 690
+
+# running containers
+docker container ls
+
+# all containers
+docker container ls -a
+
+# names are generated randomly unless we specify them
+docker container run --publish 80:80 --detach --name webhost nginx
+
+docker container ls -a
+
+# logs for webhost container
+docker container logs webhost
+
+docker container top
+
+# running processes in our container 
+docker container top webhost
+
+docker container --help
+
+docker container ls -a
+
+docker container rm 63f 690 ode
+
+docker container ls
+
+# removing container with 'force' option
+docker container rm -f 63f
+
+docker container ls -a
+```
+### What happens in 'docker container run'
+1. Looks for that image locally in image cache, doesn't find anything
+2. Then looks in remote image repository
+3. Downloads the latest version (nginx:latest by default)
+4. Creates new container based on that image and prepares to start
+5. Gives it a virtual IP on a private network inside docker engine
+6. Opens up port 80 on host and forwads to port 80 in container
+7. Starts container by using the CMD in the image Dockerfile
+
+```
+docker container run --publish 8080:80 --name webhost -d nginx:1.11 nginx -T
+```
+
+### Container VS. VM: It's Just a Process
+- [Cgroups, namespaces, and beyond: what are containers made from?](https://www.youtube.com/watch?v=sK5i-N34im8&list=PLBmVKD7o3L8v7Kl_XXh3KaJl9Qw2lyuFl)
+- [Getting a Shell in the Docker for Windows Moby VM](https://www.bretfisher.com/blog/getting-a-shell-in-the-docker-for-windows-vm)
+```
+
+docker run --name mongo -d mongo
+
+docker ps
+
+# list processes running inside a container
+docker top mongo
+
+docker stop mongo
+
+docker ps
+
+docker top mongo
+
+docker start mongo
+
+docker ps
+
+docker top mongo
+```
+### Assignment Answers: Manage Multiple Containers
+
+```
+docker container run -d -p 3306:3306 --name db -e MYSQL_RANDOM_ROOT_PASSWORD=yes mysql
+
+docker container logs db
+
+docker container run -d --name webserver -p 8080:80 httpd
+
+docker ps
+
+docker container run -d --name proxy -p 80:80 nginx
+
+docker ps
+
+docker container ls
+
+docker container stop
+
+docker ps -a
+
+docker container ls -a
+
+docker container rm
+
+docker ps -a
+
+docker image ls
+```
+### What's Going On In Containers: CLI Process Monitoring
+- `docker container top` - process list in one container
+- `docker container inspect` - details of one container config
+- `docker container stats` - performance stats for all containers
+
+```
+docker container run -d --name nginx nginx
+
+docker container run -d --name mysql -e MYSQL_RANDOM_ROOT_PASSWORD=true mysql
+
+docker container ls
+
+docker container top mysql
+
+docker container top nginx
+
+docker container inspect mysql
+
+docker container stats --help
+
+docker container stats
+
+docker container ls
+```
+### Getting a Shell Inside Containers: No Need for SSH
+- **Replacing mysql with mariadb**
+``docker container run -d --name mysql -e MYSQL_RANDOM_ROOT_PASSWORD=true mariadb``
+- `docker container run -it` - start new container interactively
+- `docker container exec -it`- run additional command in existing
+- [Package Management Essentials](https://www.digitalocean.com/community/tutorials/package-management-basics-apt-yum-dnf-pkg)
+
+```
+docker container run -help
+
+# running with extra command bash
+docker container run -it --name proxy nginx bash
+
+docker container ls
+
+docker container ls -a
+
+docker container run -it --name ubuntu ubuntu
+
+docker container ls
+
+docker container ls -a
+
+docker container start --help
+
+# re-running a container
+docker container start -ai ubuntu
+
+docker container exec --help
+
+docker container exec -it mysql bash
+
+docker container ls
+
+docker pull alpine
+
+docker image ls
+
+# gives an error
+docker container run -it alpine bash
+
+docker container run -it alpine sh
+```
+### Docker Networks: Concepts for Private and Public Comms in Containers
+- [Format command and log output](https://docs.docker.com/engine/cli/formatting/)
+- `docker container port <container>` - which ports are open for a container
+- Docker has its own private virtual network "bridge"
+- Each virtual network routes through NAT firewall on host IP
+- All containers on a virtual network can talk to each other without -p
+- Good practice is to create a network for the related applications
+```
+docker container run -p 80:80 --name webhost -d nginx
+# shows the port mapping
+docker container port webhost
+# checking the json node
+docker container inspect --format '{{ .NetworkSettings.IPAddress }}' webhost
+```
+
+### Change In Official Nginx Image Removes Ping
+- A change in the official nginx image https://hub.docker.com/_/nginx (nginx  or nginx:latest ) removes ping
+- Use `nginx:alpine` instead of `nginx`
+### Docker Networks: CLI Management of Virtual Networks
+- `docker network ls` - show networks
+- `docker network inspect` - inspect a network
+- `docker network create --driver` - create a network
+- `docker network connect` - attach a network to container
+- `docker network disconnect` - detach a network from container
+- `--network bridge` - default Docker virtual network, which is NATed behind the  Host IP 
+- `--network none` - removes eth0 and only leaves you with localhost interface in container
+
+```
+docker network ls
+
+docker network inspect bridge
+
+docker network ls
+
+# creating a new network
+docker network create my_app_net
+
+docker network ls
+
+docker network create --help
+
+# running a container with a new network my_app_net
+docker container run -d --name new_nginx --network my_app_net nginx:alpine
+
+docker network inspect my_app_net
+
+docker network --help
+
+# Dynamically creates a NIC in a container on an existing virtual network
+# <NETWORK_ID> <CONTAINER_ID>
+docker network connect becffb3eef1c f3d08cadc1e0
+	                                 			   
+docker container inspect
+
+docker network disconnect becffb3eef1c f3d08cadc1e0
+
+docker container inspect
+```
+#### Docker Networks Default Security
+
+- Create your apps so frontend/backend sit on the same Docker network
+- Their inter-communication never leaves host
+- All externally exposed ports closed by default
+- You must manually expose via -p, which is better default security
+- This get even better later with Swarm and Overlay networks
+
+### Docker Networks: DNS and How Containers Find Each Other
+-  Docker daemon has a built-in DNS server that containers use by default
+- Docker defaults the hostname to the container's name, but you can also set the aliases
+```
+docker container ls
+
+docker network inspect
+
+docker container run -d --name my_nginx --network my_app_net nginx:alpine
+
+docker container inspect my_app_net
+
+docker container exec -it my_nginx ping new_nginx
+
+docker container exec -it new_nginx ping my_nginx
+
+docker network ls
+
+docker container create --help
+```
+#### Docker Networks: DNS
+- Containers shouldn't rely on IP's for inte-cmmunication
+- DNS for friendly names is built-in if you use custom networks
+- You're using custom networks right?
+- This gets way easier with Docker Compose in future Section 
+
+
+#### Assignment Answers: Using Containers for CLI Testing
+- curl update
+  - ubuntu: `apt-get update && apt-get install curl` 
+  - centos: `yum update curl`
+- checking a version: `curl --version`
+- Assignment:
+  - Use different Linux distro containers to check curl cli tool version
+  - Use two different terminal windows to start bash in both centos:7
+and ubuntu:14.04, using -it
+  - Learn the docker container run —rm option so you can save
+cleanup
+  - Ensure curl is installed and on latest version for that distro
+  - ubuntu: apt-get update && apt-get install curl
+    - centos: yum update curl
+    - Check curl --version
+```
+docker container run --rm -it centos:7 bash
+
+docker ps -a
+
+docker container run --rm -it ubuntu:14.04 bash
+
+docker ps -a
+```
+#### Assignment Answers: DNS Round Robin Testing
+- Elasticsearch newer versions require environment variable changes to work correctly. Older elasticsearch versions still work, but don't support Arm64 (Apple Silicon, etc).Alternatives:
+  - Use an updated Elasticsearch image and limit its Java memory
+  - Replace Elasticsearch with httpenv, a simple HTTP serve
+- centos is no longer a supported image by Red Hat, so we can use rockylinux/rockylinux:10 as a drop-in replacement for centos.
+- [Round-robin_DNS](https://en.wikipedia.org/wiki/Round-robin_DNS)
+- Assignment:
+  - Ever since Docker Engine 1.11, we can have multiple containers
+on a created network respond to the same DNS address
+  - Create a new virtual network (default bridge driver)
+  - Create two containers from elasticsearch:2 image
+  - Research and use —network-alias search when creating them
+to give them an additional DNS name to respond to
+  - Run alpine nslookup search with --net to see the two
+containers list for the same DNS name
+  - Run centos curl -s search:9200 with --net multiple times
+until you see both "name" fields show
+
+```
+docker network create dude
+
+# --net - network
+docker container run -d --net dude --net-alias search elasticsearch:2
+
+docker container ls
+
+docker container run --rm -- net dude alpine nslookup search
+
+docker container run --rm --net dude centos curl -s search:9200
+
+docker container ls
+
+docker container rm -f
+```
