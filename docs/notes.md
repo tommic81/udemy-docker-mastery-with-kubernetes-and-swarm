@@ -50,3 +50,54 @@ The *only* reason I used elasticsearch in this demo was because 1. it uses HTTP,
 I was using the older :2 tag for elasticsearch because newer versions use up *a lot* of memory and require complex environment variables to tune it for a typical laptop or Play With Docker.
 
 However, the :2 tag for elasticsearch is old and only works on x86_64 machines. The older v2  doesn't have an arm64 build (M1, M2, Apple Silicon, Raspberry Pi, etc.) It's one of the last lectures for me to replace with an image that has an arm64 variant as well as the typical x86_64, so if you're on a arm64 machine, you can use one of these two options to finish the assignment:
+
+## Persistent Data: Volumes
+### Database Passwords in Containers
+We all know databases usually need passwords, but since the dawn of Docker, the postgres image (and a few others like redis) has allowed you to do a simple docker run on it and it starts without a password. Sure you could set a password but it didn't require one.
+
+In Feburary 2020 that changed, and will affect using postgres in this course (and my others). When running postgres now, you'll need to either set a password, or tell it to allow any connection (which was the default before this change).
+
+For docker run, and the forthcoming Docker Compose sections, you need to either set a password with the environment variable:
+
+POSTGRES_PASSWORD=mypasswd
+
+Or tell it to ignore passwords with the environment variable:
+
+POSTGRES_HOST_AUTH_METHOD=trust
+
+Note this change was in the Docker Hub image, and not a change in postgres itself.
+
+Also note if I or you were pinning versions, as we should, this wouldn't have surprised us. I tend to only pin to the minor version in this course (9.6) rather than the patch version (9.6.16) to keep you a bit more secure in the course. In the real world, I always pin my production apps to the patch version. It's the only safe way to operate. By pinning to the minor version in the courses, I prevent any major changes from breaking the course (in theory ha ha), yet also ensure you're running the latest patches (which would fix any bugs or security problems). In this, *very rare case*, the maintainer of the official postgres decided to introduce a breaking change in the *image* to a patch release of the app. The two aren't related, and it kinda shows off a weakness of the Docker Hub model... that there is no version of the Docker Hub image really, it's just tracking the upstream postgres versions... so then if any Docker Hub change would break something, it can't easily be tracked as a separate version from the app itself. Oh well, just remember to always pin the whole image version for things you care about.
+
+I've updated the course repo files to indicate this change, but if you've cloned the repo before February 18th, 2020, you will need to update or replace your clone.
+
+### File Permissions Across Multiple Containers
+
+At some point you'll have file permissions problems with container apps not having the permissions they need. Maybe you want multiple containers to access the same volume(s). Or maybe you're bind-mounting existing files into a container.
+
+Note that the below info is about pure Linux hosts, like production server setups. If you're using Docker Desktop locally, it will translate permissions from your host (macOS & Windows) into the container (Linux) automatically, but when working on pure Linux servers with just dockerd, no translation is made.
+
+How file permissions work across multiple containers accessing the same volume or bind-mount
+File ownership between containers and the host are just numbers. They stay consistent no matter how you run them. Sometimes you see friendly user names in commands like ls but those are just name-to-number aliases that you'll see in `/etc/passwd` and `/etc/group`. Your host has those files, and usually, your containers will have their own. They are usually different. These files are really just for humans to see friendly names. The Linux Kernel only cares about IDs, which are attached to each file and directory in the file system itself, and those IDs are the same no matter which process accesses them.
+
+When a container is just accessing its own files, this isn't usually an issue.
+
+But for multiple containers accessing the same volume or bind-mount, problems can arise in two ways:
+
+1. Problem one: The `/etc/passwd` is different across containers. Creating a named user in one container and running as that user may use ID 700, but that same name in another container with a different `/etc/passwd` may use a different ID for that same username. That's why I only care about IDs when trying to sync up permissions. You'll see this confusion if you're running a container on a Linux VM and it had a volume or bind-mount. If you do an ls on those files from the host, it may show them owned by ubuntu or node or systemd, etc. Then if you run ls inside the container, it may show a different friendly username. The IDs are the same in both cases, but the host will have a different passwd file than the container, and show you different friendly names. Different names are fine, because it's only ID that counts. Two processes trying to access the same file must have a matching user ID or group ID.
+
+2. Problem two: Your two containers are running as different users. Maybe the user/group IDs and/or the USER statement in your Dockerfiles are different, and the two containers are technically running under different IDs. Different apps will end up running as different IDs. For example, the node base image creates a user called node with ID of 1000, but the NGINX image creates an nginx user as ID 101. Also, some apps spin-off sub-processes as different users. NGINX starts its main process (PID 1) as root (ID 0) but spawns sub-processes as the nginx user (ID 101), which keeps it more secure.
+
+So for troubleshooting, this is what I do:
+Use the command ps aux in each container to see a list of processes and usernames. The process needs a matching user ID or group ID to access the files in question.
+
+Find the UID/GID in each containers `/etc/passwd` and `/etc/group` to translate names to numbers. You'll likely find there a miss-match, where one containers process originally wrote the files with its UID/GID and the other containers process is running as a different UID/GID.
+
+Figure out a way to ensure both containers are running with either a matching user ID or group ID. This is often easier to manage in your own custom app (when using a language base image like python or node) rather than trying to change a 3rd party app's container (like nginx or postgres)... but it all depends. This may mean creating a new user in one Dockerfile and setting the startup user with USER. (see USER docs) The node default image has a good example of the commands for creating a user and group with hard-coded IDs:
+
+RUN groupadd --gid 1000 node \\
+        && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
+USER 1000:1000
+Note: When setting a Dockerfile's USER, use numbers, which work better in Kubernetes than using names.
+
+Note 2: If ps doesn't work in your container, you may need to install it. In debian-based images with apt, you can add it with apt-get update && apt-get install procps

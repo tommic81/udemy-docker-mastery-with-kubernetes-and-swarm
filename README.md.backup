@@ -579,3 +579,580 @@ docker container ls
 
 docker container rm -f
 ```
+##### --net-alias vs --link
+- With --net-alias, one container can access the other container only if they are on the same network. In other words, in addition to --net-alias foo and --net-alias bar, you need to start both containers with --net foobar_net after creating the network with docker network create foobar_net.
+- With --net-alias foo, all containers in the same network can reach the container by using its alias foo. With --link, only the linked container can reach the container by using the name foo.
+
+## Container images. Where to find them and how to use them.
+- App binaries and dependencies
+- Metadata about the image data and how to run the image
+- Not a complete OS. No kernel, kernel modules (e.g. driver)
+- Small as one file (your app binary) like a golang static binary
+- Big as a Ubuntu distro with apt and Apache, PHP and more installed
+
+### The Mighty Hub: Using Docker Hub Registry Images
+
+- [Docker Hub](http://hub.docker.com) 
+- [List of official images](https://github.com/docker-library/official-images/tree/master/library)
+- Images are tagged
+- Alwayes specify an exact version of image on production
+
+```
+# list of images
+docker image ls
+
+# downloads the latest
+docker pull nginx
+
+docker pull nginx:1.11.9
+
+docker pull nginx:1.11
+
+docker pull nginx:1.11.9-alpine
+
+docker image ls
+```
+
+### Images and Their Layers: Discover the Image Cache
+- [storage, drivers](https://docs.docker.com/engine/storage/drivers/)
+- Union file system (layers)
+- Starts with an empty layer (scratch)
+- Each change is an another layer
+- Each layer has a unique SHA
+- We never store and entire stack of image layers more than once if those layers ar ethe same
+- When we start a container, docker creates another read/write layer for that container on top the image
+- Image in readonly
+- If we run a container and change something in a main image, the change is stored in a top (container's) layer. Main image stays unchanged. 
+- Layers are not always images. They are often just layers in a image and they do not have their own SHA.
+
+```
+docker image ls
+
+# shows layers of changes made in image
+docker history nginx:latest
+
+docker history mysql
+
+# JSON metadata about an image
+docker image inspect nginx
+```
+
+### Image Tagging and Pushing to Docker Hub
+- REPOSITORY - usually a username or organisation / repository
+- official repositories - they live at the root namespace of the registry, so they do not need account name in front of repo name
+- `docker login <server>` - defaults to logging in Hub, but you can override by adding server url
+
+```
+docker image tag --help
+
+docker pull mysql/mysql-server
+
+docker image ls
+
+# repository:tag
+docker pull nginx:mainline
+
+docker image ls
+
+# changes repository name to bretfisher/nginx, tag will be 'latest' by default
+docker image tag nginx bretfisher/nginx
+
+docker image tag --help
+
+docker image ls
+
+docker image push bretfisher/nginx
+
+docker --help
+
+docker login
+
+# local config
+cat .docker/config.json
+
+docker image push bretfisher/nginx
+
+# adding a tag 'testing'
+docker image tag bretfisher/nginx bretfisher/nginx:testing
+
+docker image push bretfisher/nginx bretfisher/nginx:testing
+
+docker image ls
+
+docker image push bretfisher/nginx:testing
+
+docker image ls
+```
+
+
+### Building Images: The Dockerfile Basics
+- https://github.com/BretFisher
+- [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
+- `FROM` base image
+- `ENV` environment variables 
+- `&&` chaining commands to reduce no of layers
+- linking logs
+```   
+# forward request and error logs to docker log collector
+&& ln -sf /dev/stdout /var/log/nginx/access.log \
+&& ln -sf /dev/stderr /var/log/nginx/error.log \
+```
+- `EXPOSE 80` exposing port which then can be published `-p` 
+- `CMD` final command which is executed every time when a container is started
+
+```
+cd dockerfile-sample-1
+
+vim Dockerfile
+```
+
+```
+#
+# NOTE: THIS DOCKERFILE IS GENERATED VIA "update.sh"
+#
+# PLEASE DO NOT EDIT IT DIRECTLY.
+#
+FROM debian:bookworm-slim
+
+LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
+
+ENV NGINX_VERSION   1.29.0
+ENV NJS_VERSION     0.9.0
+ENV NJS_RELEASE     1~bookworm
+ENV PKG_RELEASE     1~bookworm
+ENV DYNPKG_RELEASE  1~bookworm
+
+RUN set -x \
+    # create nginx user/group first, to be consistent throughout docker variants
+    && groupadd --system --gid 101 nginx \
+    && useradd --system --gid nginx --no-create-home --home /nonexistent --comment "nginx user" --shell /bin/false --uid 101 nginx \
+    && apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests -y gnupg1 ca-certificates \
+    && \
+    NGINX_GPGKEYS="573BFD6B3D8FBC641079A6ABABF5BD827BD9BF62 8540A6F18833A80E9C1653A42FD21310B49F6B46 9E9BE90EACBCDE69FE9B204CBCDCD8A38D88A2B3"; \
+    NGINX_GPGKEY_PATH=/etc/apt/keyrings/nginx-archive-keyring.gpg; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    found=''; \
+    for NGINX_GPGKEY in $NGINX_GPGKEYS; do \
+    for server in \
+    hkp://keyserver.ubuntu.com:80 \
+    pgp.mit.edu \
+    ; do \
+    echo "Fetching GPG key $NGINX_GPGKEY from $server"; \
+    gpg1 --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$NGINX_GPGKEY" && found=yes && break; \
+    done; \
+    test -z "$found" && echo >&2 "error: failed to fetch GPG key $NGINX_GPGKEY" && exit 1; \
+    done; \
+    gpg1 --export $NGINX_GPGKEYS > "$NGINX_GPGKEY_PATH" ; \
+    rm -rf "$GNUPGHOME"; \
+    apt-get remove --purge --auto-remove -y gnupg1 && rm -rf /var/lib/apt/lists/* \
+    && dpkgArch="$(dpkg --print-architecture)" \
+    && nginxPackages=" \
+    nginx=${NGINX_VERSION}-${PKG_RELEASE} \
+    nginx-module-xslt=${NGINX_VERSION}-${DYNPKG_RELEASE} \
+    nginx-module-geoip=${NGINX_VERSION}-${DYNPKG_RELEASE} \
+    nginx-module-image-filter=${NGINX_VERSION}-${DYNPKG_RELEASE} \
+    nginx-module-njs=${NGINX_VERSION}+${NJS_VERSION}-${NJS_RELEASE} \
+    " \
+    && case "$dpkgArch" in \
+    amd64|arm64) \
+    # arches officialy built by upstream
+    echo "deb [signed-by=$NGINX_GPGKEY_PATH] https://nginx.org/packages/mainline/debian/ bookworm nginx" >> /etc/apt/sources.list.d/nginx.list \
+    && apt-get update \
+    ;; \
+    *) \
+    # we're on an architecture upstream doesn't officially build for
+    # let's build binaries from the published packaging sources
+    # new directory for storing sources and .deb files
+    tempDir="$(mktemp -d)" \
+    && chmod 777 "$tempDir" \
+    # (777 to ensure APT's "_apt" user can access it too)
+    \
+    # save list of currently-installed packages so build dependencies can be cleanly removed later
+    && savedAptMark="$(apt-mark showmanual)" \
+    \
+    # build .deb files from upstream's packaging sources
+    && apt-get update \
+    && apt-get install --no-install-recommends --no-install-suggests -y \
+    curl \
+    devscripts \
+    equivs \
+    git \
+    libxml2-utils \
+    lsb-release \
+    xsltproc \
+    && ( \
+    cd "$tempDir" \
+    && REVISION="${NGINX_VERSION}-${PKG_RELEASE}" \
+    && REVISION=${REVISION%~*} \
+    && curl -f -L -O https://github.com/nginx/pkg-oss/archive/${REVISION}.tar.gz \
+    && PKGOSSCHECKSUM="400593da45fc0195a01138c0c23a06059da1c6a2e26959f2c4c95fbaf63436ff211665ef01392d2b775a0133d5b57680dabe51b840a55f82e89621e84cf651d1 *${REVISION}.tar.gz" \
+    && if [ "$(openssl sha512 -r ${REVISION}.tar.gz)" = "$PKGOSSCHECKSUM" ]; then \
+    echo "pkg-oss tarball checksum verification succeeded!"; \
+    else \
+    echo "pkg-oss tarball checksum verification failed!"; \
+    exit 1; \
+    fi \
+    && tar xzvf ${REVISION}.tar.gz \
+    && cd pkg-oss-${REVISION} \
+    && cd debian \
+    && for target in base module-geoip module-image-filter module-njs module-xslt; do \
+    make rules-$target; \
+    mk-build-deps --install --tool="apt-get -o Debug::pkgProblemResolver=yes --no-install-recommends --yes" \
+    debuild-$target/nginx-$NGINX_VERSION/debian/control; \
+    done \
+    && make base module-geoip module-image-filter module-njs module-xslt \
+    ) \
+    # we don't remove APT lists here because they get re-downloaded and removed later
+    \
+    # reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+    # (which is done after we install the built packages so we don't have to redownload any overlapping dependencies)
+    && apt-mark showmanual | xargs apt-mark auto > /dev/null \
+    && { [ -z "$savedAptMark" ] || apt-mark manual $savedAptMark; } \
+    \
+    # create a temporary local APT repo to install from (so that dependency resolution can be handled by APT, as it should be)
+    && ls -lAFh "$tempDir" \
+    && ( cd "$tempDir" && dpkg-scanpackages . > Packages ) \
+    && grep '^Package: ' "$tempDir/Packages" \
+    && echo "deb [ trusted=yes ] file://$tempDir ./" > /etc/apt/sources.list.d/temp.list \
+    # work around the following APT issue by using "Acquire::GzipIndexes=false" (overriding "/etc/apt/apt.conf.d/docker-gzip-indexes")
+    #   Could not open file /var/lib/apt/lists/partial/_tmp_tmp.ODWljpQfkE_._Packages - open (13: Permission denied)
+    #   ...
+    #   E: Failed to fetch store:/var/lib/apt/lists/partial/_tmp_tmp.ODWljpQfkE_._Packages  Could not open file /var/lib/apt/lists/partial/_tmp_tmp.ODWljpQfkE_._Packages - open (13: Permission denied)
+    && apt-get -o Acquire::GzipIndexes=false update \
+    ;; \
+    esac \
+    \
+    && apt-get install --no-install-recommends --no-install-suggests -y \
+    $nginxPackages \
+    gettext-base \
+    curl \
+    && apt-get remove --purge --auto-remove -y && rm -rf /var/lib/apt/lists/* /etc/apt/sources.list.d/nginx.list \
+    \
+    # if we have leftovers from building, let's purge them (including extra, unnecessary build deps)
+    && if [ -n "$tempDir" ]; then \
+    apt-get purge -y --auto-remove \
+    && rm -rf "$tempDir" /etc/apt/sources.list.d/temp.list; \
+    fi \
+    # forward request and error logs to docker log collector
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log \
+    # create a docker-entrypoint.d directory
+    && mkdir /docker-entrypoint.d
+
+# COPY docker-entrypoint.sh /
+# COPY 10-listen-on-ipv6-by-default.sh /docker-entrypoint.d
+# COPY 15-local-resolvers.envsh /docker-entrypoint.d
+# COPY 20-envsubst-on-templates.sh /docker-entrypoint.d
+# COPY 30-tune-worker-processes.sh /docker-entrypoint.d
+# ENTRYPOINT ["/docker-entrypoint.sh"]
+#
+EXPOSE 80
+
+STOPSIGNAL SIGQUIT
+
+CMD ["nginx", "-g", "daemon off;"]
+
+```
+
+### Building Images: Running Docker Builds
+
+```
+# building an image
+docker image build -t customnginx .
+
+docker image ls
+
+docker image build -t customnginx .
+```
+
+
+### Building Images: Extending Official Images
+- `WORKDIR /usr/share/nginx/html` equivalent of directory change
+- `COPY index.html index.html` copy your source code to container images
+
+
+```
+cd dockerfile-sample-2
+
+vim Dockerfile
+
+docker container run -p 80:80 --rm nginx
+
+docker image build -t nginx-with-html .
+
+docker container run -p 80:80 --rm nginx-with-html
+
+docker image ls
+
+docker image tag --help
+
+docker image tag nginx-with-html:latest bretfisher/nginx-with-html:latest
+
+docker image ls
+
+docker push
+```
+- Dockerfile
+
+```
+# this shows how we can extend/change an existing official image from Docker Hub
+
+FROM nginx:latest
+# highly recommend you always pin versions for anything beyond dev/learn
+
+WORKDIR /usr/share/nginx/html
+# change working directory to root of nginx webhost
+# using WORKDIR is preferred to using 'RUN cd /some/path'
+
+COPY index.html index.html
+
+# I don't have to specify EXPOSE or CMD because they're in my FROM
+```
+
+### Assignment Answers: Build Your Own Dockerfile and Run Containers From It
+#### Assignment: Build Your Own Image
+Dockerfiles are part process workflow and part art
+- Take existing Node.js app and Dockerize it
+- Make Dockerfile. Build it. Test it. Push it. (rm it). Run it.
+- Expect this to be iterative. Rarely do I get it right the first time.
+- Details in dockerfile-assignment-1/Dockerfile
+- Use the Alpine version of the official 'node' 6.x image
+- Expected result is web site at http://localhost
+- Tag and push to your Docker Hub account (free)
+- Remove your image from local cache, run again from Hub
+
+```Dockerfile
+FROM node:6-alpine
+
+EXPOSE 3000
+
+RUN apk add --update tini
+
+RUN mkdir -p /usr/src/app
+
+WORKDIR /usr/src/app
+ 
+COPY package.json package.json
+ 
+RUN npm install && npm cache clean --force
+  
+COPY . .
+
+CMD [ "tini", "--","node", "./bin/www" ]
+```
+
+```
+cd dockerfile-assignment-1
+
+vim Dockerfile
+
+docker build -t testnode .
+
+docker container run --rm -p 80:3000 testnode
+
+docker images
+
+docker tag --help
+
+docker tag testnode bretfisher/testing-node
+
+docker push --help
+
+docker push bretfisher/testing-node
+
+docker image ls
+
+docker image rm bretfisher/testing-node
+docker container run --rm -p 80:3000 bretfisher/testing-node
+
+```
+### Using Prune to Keep Your Docker System Clean (YouTube)
+You can use "prune" commands to clean up images, volumes, build cache, and containers. Examples include:
+
+- `docker image prune` to clean up just "dangling" images
+
+- `docker system prune` will clean up everything you're not currently using
+
+- The big one is usually `docker image prune -a` which will remove all images you're not using. Use `docker system df` to see space usage.
+
+Remember each one of those commands has options you can learn with --help.
+
+Here's a YouTube video I made about it: https://youtu.be/_4QzP7uwtvI
+
+Lastly, realize that the Linux VM will *eventually* auto-shrink. You may not see the free space on your host OS right away, and it may take Docker a restart and some idle time before it completes a VM shrink.
+
+## Container Lifetime & Persistent Data: Volumes, Volumes, Volumes
+- [Storage](https://docs.docker.com/engine/storage/)
+- [12 Fractured Apps](https://medium.com/@kelseyhightower/12-fractured-apps-1080c73d481c#.cjvkgw4b3)
+- [12factorapp](https://12factor.net/)
+- Containers are usually immutable and ephemeral
+- "immutable infrastructure": only re-deploy containers, never change
+- Volumes and Bind Mounts
+- Volumes: make special location outside of container UFS
+- Bind Mounts: link container path to host path
+
+### Persistent Data: Data Volumes
+- VOLUME command in Dockerfile
+- Also override with docker run -v /path/in/container
+- Bypasses Union File System and stores in alt location on host
+- Includes it's own management commands under docker volume
+- Connect to none, one, or multiple containers at once
+- Not subject to commit, save, or export commands
+- By default they only have a unique ID, but you can assign name
+```
+
+docker pull mariadb
+
+docker image inspect mariadb
+
+docker container run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=True mariadb
+
+docker container ls
+
+docker container inspect mysql
+
+docker volume ls
+
+docker volume inspect TAB COMPLETION
+
+docker container run -d --name mysql2 -e MYSQL_ALLOW_EMPTY_PASSWORD=True mariadb
+
+docker volume ls
+
+docker container stop mariadb
+
+docker container stop mysql2
+
+docker container ls
+
+docker container ls -a
+
+docker volume ls
+
+docker container rm mariadb mysql2
+
+docker volume ls
+
+# named volume
+docker container run -d --name mysql -e MYSQL_ALLOW_EMPTY_PASSWORD=True -v mysql-db:/var/lib/mysql mariadb
+
+docker volume ls
+
+docker volume inspect mysql-db
+
+docker container rm -f mysql
+
+docker container run -d --name mysql3 -e MYSQL_ALLOW_EMPTY_PASSWORD=True -v mysql-db:/var/lib/mysql mariadb
+
+docker volume ls
+
+docker container inspect mysql3
+
+# when we want to specify a driver
+docker volume create --help
+```
+
+
+```json
+ "Mounts": [
+            {
+                "Type": "volume",
+                "Name": "27809093b25e2a86b1f1e889e96d164aae3723409990d2166e448d791f858c50",
+                "Source": "/var/lib/docker/volumes/27809093b25e2a86b1f1e889e96d164aae3723409990d2166e448d791f858c50/_data",
+                "Destination": "/var/lib/mysql",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+```
+
+
+#### Shell Differences for Path Expansion
+
+In the next lecture, you'll learn how to share files and directories between a host and a Docker container. One of the parts of the command line you'll need to type is the host file path you want to share.
+
+With Docker CLI, you can always use a full file path on any OS, but often you'll see me and others use a "parameter expansion" like $(pwd) which means "print working directory".
+
+Here's the important part. Each shell may do this differently, so here's a cheat sheet for which OS and Shell your using. I'll be using `$(pwd)` on a Mac, but yours may be different!
+
+This isn't a Docker thing, it's a Shell thing.
+
+For PowerShell use: `${pwd}` 
+
+For cmd.exe "Command Prompt use: %cd%
+
+Linux/macOS bash, sh, zsh, and Windows Docker Toolbox Quickstart Terminal use: `$(pwd)` 
+
+Note, if you have spaces in your path, you'll usually need to quote the whole path in the docker command.
+
+
+### Persistent Data: Bind Mounting
+- Maps a host file or directory to a container file or directory
+- Basically just two locations pointing to the same file(s)
+- Skips UFS, and host files overwrite any in container
+- Can't use in Dockerfile, must be at container run
+- ... run -v /Users/bret/stuff:/path/container (mac/linux)
+- ... run -v //c/Users/bret/stuff:/path/container
+(windows)
+- `$(pwd)` - print out a working directory
+
+```
+cd dockerfile-sample-2
+
+pcat Dockerfile
+
+docker container run -d --name nginx -p 80:80 -v $(pwd):/usr/share/nginx/html nginx:alpine
+
+docker container run -d --name nginx2 -p 8080:80 nginx:alpine
+
+docker container exec -it nginx bash  
+```
+
+
+### Assignment Answers: Database Upgrades with Named Volumes
+#### Assignment
+- Database upgrade with containers
+- Create a postgres container with named volume psql-data
+using version 9.6.1
+- Use Docker Hub to learn VOLUME path and versions needed to run
+it
+- Check logs, stop container
+- Create a new postgres container with same named volume
+using 9.6.2
+- Check logs to validate
+- (this only works with patch versions, most SQL DB's require manual commands to upgrade
+DB's to major/minor versions, i.e. it's a DB limitation not a container one)
+
+- Use postgres:15.2
+
+
+- postgres needs passwords
+
+```
+docker volume create psql
+docker run -d --name psql1 -e POSTGRES_PASSWORD=mypassword -v psql:/var/lib/postgresql/data postgres:15.1
+docker logs psql1
+docker stop psql1
+docker run -d --name psql2 -e POSTGRES_PASSWORD=mypassword -v psql:/var/lib/postgresql/data postgres:15.2
+docker logs psql2
+docker stop psql2
+```
+### Assignment Answers: Edit Code Running In Containers With Bind Mounts
+
+`docker run -p 80:4000 -v $(pwd):/site bretfisher/jekyll-serve`
+
+#### Assignment
+
+- Use a [Jekyll](https://jekyllrb.com/) "Static Site Generator" to start a local web server
+- Don't have to be web developer: this is example of bridging the gap
+between local file access and apps running in containers
+- source code is in the course repo under **bindmount-sample-1**
+- We edit files with editor on our host using native tools
+- Container detects changes with host files and updates web server
+- start container with
+ `docker run -p 80:4000 -v $(pwd):/site bretfisher/jekyllserve`
+- Refresh our browser to see changes
+- Change the file in **_posts\** and refresh browser to see changes
