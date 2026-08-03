@@ -1170,5 +1170,43 @@ between local file access and apps running in containers
 
 |Buildtime "docker build"|Both| Runtime "docker run"|
 |------------------------|----|---------------------|
-|ADD, COPY, FROM, RUN, ONBUILD|These statements add to the image and can't be overwritten FROM with a second statement.  | EXPOSE, VOLUME|
-|ARG| These statements replace their previous use. For key=value statements, a reused key name replaces the previous value. |STOPSIGNAL, CMD, ENTRYPOINT, HEATHCHECK|
+|ADD, COPY, FROM, RUN, ONBUILD|**Additive** - These statements add to the image and can't be overwritten FROM with a second statement.  | EXPOSE, VOLUME|
+|ARG| **Overwrite** - These statements replace their previous use. For key=value statements, a reused key name replaces the previous value. |STOPSIGNAL, CMD, ENTRYPOINT, HEATHCHECK|
+
+### What is ENTRYPOINT
+- ENTRYPOINT executes a command on container start.
+- ENTRYPOINT is a **Runtime** statement, stored as metadata with an image.
+- Only the last ENTRYPOINT in a Dockerfile is used, making it an **Overwrite** type.
+- A container needs at least a CMD or an ENTRYPOINT to know how to start.
+- ENTRYPOINT requires more typing to overwrite compared to CMD, so it's rarely used by itself as a replacement for CMD.
+- You can overwrite ENTRYPOINT with `docker run --entrypoint "something" <image>`.
+- Executes a command on a container start
+- [Entrypoint referene](https://docs.docker.com/reference/dockerfile/#entrypoint)
+- [Busybox](https://busybox.net/about.html)
+
+```
+> docker run busybox
+
+> docker inspect busybox
+
+    "Cmd": [
+                "sh"
+            ],
+            "Image": "",
+            "Volumes": null,
+            "WorkingDir": "",
+            "Entrypoint": null,
+
+> docker run -it busybox
+```
+
+- dockerfiles\entrypoint\entrypoint-1
+
+```
+FROM busybox:latest
+
+ENTRYPOINT ["hostname"]
+
+```
+- **ENTRYPOINT** complements **CMD**
+- Use CMD by default
