@@ -1156,3 +1156,20 @@ between local file access and apps running in containers
  `docker run -p 80:4000 -v $(pwd):/site bretfisher/jekyllserve`
 - Refresh our browser to see changes
 - Change the file in **_posts\** and refresh browser to see changes
+
+## Dockerfile ENTRYPOINT
+- [Dockerfile reference](https://docs.docker.com/reference/dockerfile/)
+### Buildtime vs Runtime
+- Buildtime statements affect the files in the image or how the image is built.
+- Runtime statements are typically stored as metadata and affect the container.
+- Some statements affect how the image is built and also change container start behavior
+- Overwrite statements replace any previous use.
+- Additive statements add to any previous use.
+- Know your base (FROM) images. Many statement types affect downstream images.
+- Understanding these effects helps troubleshoot Dockerfile and container issues.
+
+|Buildtime "docker build"|Both| Runtime "docker run"|
+|------------------------|----|---------------------|
+|ADD, COPY, FROM, RUN, ONBUILD|**Additive** - These statements add to the image and can't be overwritten FROM with a second statement.  | EXPOSE, VOLUME|
+|ARG| **Overwrite** - These statements replace their previous use. For key=value statements, a reused key name replaces the previous value. |STOPSIGNAL, CMD, ENTRYPOINT, HEATHCHECK|
+
