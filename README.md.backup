@@ -1180,7 +1180,6 @@ between local file access and apps running in containers
 - A container needs at least a CMD or an ENTRYPOINT to know how to start.
 - ENTRYPOINT requires more typing to overwrite compared to CMD, so it's rarely used by itself as a replacement for CMD.
 - You can overwrite ENTRYPOINT with `docker run --entrypoint "something" <image>`.
-- Executes a command on a container start
 - [Entrypoint referene](https://docs.docker.com/reference/dockerfile/#entrypoint)
 - [Busybox](https://busybox.net/about.html)
 
@@ -1198,6 +1197,21 @@ between local file access and apps running in containers
             "Entrypoint": null,
 
 > docker run -it busybox
+  whoami
+  ps
+  ls /bin
+  hostname
+  date
+  exit
+> docker build -t hostname .
+> docker run hostname
+> docker run hostname date
+> docker build -t entryhostname .
+> docker run entryhostname
+> docker run entryhostname date
+> docker inspect entryhostname
+> docker run --help
+> docker run --entrypoint date entryhostname
 ```
 
 - dockerfiles\entrypoint\entrypoint-1
@@ -1210,3 +1224,41 @@ ENTRYPOINT ["hostname"]
 ```
 - **ENTRYPOINT** complements **CMD**
 - Use CMD by default
+
+### Using ENTRYPOINT and CMD together
+- [MySQL Docker Hub Image](https://hub.docker.com/_/mysql)
+- [SIGINT, SIGTERM, and SIGKIL](https://eitca.org/cybersecurity/eitc-is-lsa-linux-system-administration/linux-processes/process-signals/examination-review-process-signals/explain-the-difference-between-sigint-sigterm-and-sigkill-signals-in-linux/)
+- [PIDs in Linux and Unix](https://en.wikipedia.org/wiki/Process_identifier)
+- [Docker Blog: Choosing between RUN, CMD, and ENTRYPOINT](https://www.docker.com/blog/docker-best-practices-choosing-between-run-cmd-and-entrypoint/)
+- If both ENTRYPOINT and CMD are set, they combine into a single command on container start.
+- For CLI tools, use ENTRYPOINT to set the base executable, while CMD should provide default arguments.
+- CMD can be easily overridden at docker run without replacing the ENTRYPOINT.
+- For pre-launch scripts, ENTRYPOINT should set the script, and CMD should set the final process.
+- ENTRYPOINT shell scripts should use exec “$@” to pass execution (PID 1) to the CMD.
+- example 1
+
+```
+FROM ubuntu:latest
+
+RUN apt-get update && \
+	apt-get install -y --no-install-recommends \
+	curl \
+	&& rm -rf /var/lib/apt/lists/*
+	
+ENTRYPOINT ["curl"]
+
+CMD ["--help"]	
+```
+- example 2
+
+```
+ENTRYPOINT ["httping", "-Y"]
+
+CMD ["--version"]
+```
+- example running a script
+```
+ENTRYPOINT ["./startup.sh"]
+CMD ["python", "app.py"]
+```
+- when we add `exec ""`
