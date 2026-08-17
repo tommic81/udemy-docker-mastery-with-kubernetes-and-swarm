@@ -1261,4 +1261,77 @@ CMD ["--version"]
 ENTRYPOINT ["./startup.sh"]
 CMD ["python", "app.py"]
 ```
-- when we add `exec ""`
+- another process will be started if we add `exec "$@"'`
+ 
+ ### Shell vs Exec Form
+ - [(Docs) Shell and Exec Form](https://docs.docker.com/reference/dockerfile/#shell-and-exec-form)
+- [(Docs) How CMD and ENTRYPOINT](https://docs.docker.com/reference/dockerfile/#understand-how-cmd-and-entrypoint-interact)
+- [(Docs) The SHELL statement](https://docs.docker.com/reference/dockerfile/#shell)
+- [(Docs) ENTRYPOINT Examples](https://docs.docker.com/reference/dockerfile/#entrypoint)
+- [Crazy ENTRYPOINT, CMD, and SHELL examples](https://dev.to/rimelek/constructing-commands-to-run-in-docker-containers-2g2i)
+- The RUN, ENTRYPOINT, and CMD instructions can be specified in shell form or exec form.
+- Shell form will inject `/bin/sh -c` at the beginning of the command.
+- Overwrite the shell that Docker injects with the SHELL statement, e.g. `SHELL ["/bin/bash", "-c"]`
+- Shell form is needed for variable substitution, chaining commands, piping output, I/O redirection.
+- Exec form (JSON syntax) runs the command without a shell.
+- Exec form ensures ENTRYPOINT/CMD binary is PID 1 and receives signals.
+- Exec form still passes ENVs from Dockerfile to processes started with ENTRYPOINT, CMD, and RUN.
+- Don’t mix forms between ENTRYPOINT and CMD, or [weird things happen](https://docs.docker.com/reference/dockerfile/#understand-how-cmd-and-entrypoint-interact).
+- General advice for which form to use:
+    - RUN: Use Shell by default.
+    - ENTRYPOINT: Always Exec, or CMD can’t be used.
+    - CMD: Use Exec by default, but sometimes Shell Form is needed for shell features.
+    - ENTRYPOINT + CMD: Always use Exec to avoid [weird edge cases](https://docs.docker.com/reference/dockerfile/#understand-how-cmd-and-entrypoint-interact).
+    
+- Exec form:
+```
+ENTRYPOINT["startup.sh"]
+CMD ["python", "server.py"]
+```
+- Shell form:
+```
+SHELL["/bin/sh", "-c"]
+```
+
+
+```
+# use 
+SHELL["/bin/sh", "-c"]
+# or
+SHELL["powershell", "-command"]
+```
+  
+### Assignment 1: Create CLI Utilities
+#### Cmatrix
+- Dockerfile
+```
+FROM alpine:latest
+
+RUN apk add --no-cache cmatrix
+
+ENTRYPOINT ["cmatrix"]
+
+CMD ["-abs","-C", "red"]
+```
+- Running
+```
+docker run -it cmatrix
+
+# or
+
+docker run -it --entrypoint sh cmatrix
+```
+#### ApacheBench
+- Dockerfile
+```
+FROM ubuntu:latest
+
+RUN apt-get update && \
+	apt-get install -y apache2-utils && \ 
+	rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT ["ab"]
+
+CMD ["-n", "10", "-c", "2", "https://www.bretfisher.com/"]
+```
+### Assignment 2: Startup Scri
