@@ -1568,3 +1568,33 @@ udemy-docker-mastery-main\compose-sample-2> docker compose up
 - `docker compose ps`
 - `docker compose top`
 - `docker compose down`
+
+### Assignment: Build a Compose File For a Multi-Container Project
+
+```yaml
+version: '2'
+services:
+  drupal:
+    image: drupal:9
+    volumes:
+      - drupal-modules:/var/www/html/modules
+      - drupal-profiles:/var/www/html/profiles
+      - drupal-sites:/var/www/html/sites
+      - drupal-themes:/var/www/html/themes
+    ports:
+      - 8080:80
+    restart: always    
+  postgres:
+    image: postgres:14
+    environment: 
+      - POSTGRES_PASSWORD=mypassword
+    volumes:
+      - psql:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  drupal-modules:
+  drupal-profiles:
+  drupal-sites:
+  drupal-themes:
+```

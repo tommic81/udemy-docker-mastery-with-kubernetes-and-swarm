@@ -1,0 +1,25 @@
+version: '2'
+services:
+  drupal:
+    image: drupal:9
+    volumes:
+      - drupal-modules:/var/www/html/modules
+      - drupal-profiles:/var/www/html/profiles
+      - drupal-sites:/var/www/html/sites
+      - drupal-themes:/var/www/html/themes
+    ports:
+      - 8080:80
+    restart: always    
+  postgres:
+    image: postgres:14
+    environment: 
+      - POSTGRES_PASSWORD=mypassword
+    volumes:
+      - psql:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  drupal-modules:
+  drupal-profiles:
+  drupal-sites:
+  drupal-themes:
