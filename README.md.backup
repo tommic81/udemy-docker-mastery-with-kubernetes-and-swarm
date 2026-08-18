@@ -1517,3 +1517,54 @@ services:
       - mysql-primary
 
 ```
+
+### Basic Compose Commands
+- [Docker Compose Releases](https://github.com/docker/compose/releases)
+- [What to use: docker-compose or single node swarm?](https://github.com/BretFisher/ama/discussions/146)
+- Example **docker-compose.yml**
+
+```
+# version isn't needed as of 2020 for docker compose CLI. 
+# All 2.x and 3.x features supported
+#version: '3.9'
+
+services:
+  proxy:
+    image: nginx:1.23 # this will use the latest version of 1.23
+    ports:
+      # NOTE: if port 80 is already in use on your host, this won't work
+      # in that case, change to any high port, like '8000:80'
+      # and then use http://localhost:8000 to access the proxy
+      - '80:80' # expose 80 on host and sent to 80 in container
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+  web:
+    image: httpd:2  # this will use the latest apache v2
+
+```
+- Running
+
+```
+udemy-docker-mastery-main\compose-sample-2> docker compose up
+[+] Running 14/14
+ ✔ web Pulled                                                                                                      3.6s
+   ✔ 26c307b5e35a Already exists                                                                                   0.0s
+   ✔ c271d17baba2 Pull complete                                                                                    0.4s
+   ✔ 4f4fb700ef54 Pull complete                                                                                    0.4s
+   ✔ 04951bf53bdd Pull complete                                                                                    0.6s
+   ✔ 2c2b87df2933 Pull complete                                                                                    1.6s
+   ✔ c4a216db6600 Pull complete                                                                                    1.7s
+ ✔ proxy Pulled                                                                                                    5.8s
+   ✔ f03b40093957 Pull complete                                                                                    3.4s
+   ✔ 0972072e0e8a Pull complete                                                                                    3.9s
+   ✔ a85095acb896 Pull complete                                                                                    3.9s
+   ✔ d24b987aa74e Pull complete                                                                                    3.9s
+   ✔ 6c1a86118ade Pull complete                                                                                    3.9s
+   ✔ 9989f7b33228 Pull complete 
+```
+- `docker compose up -d` running in the background
+- `docker compose logs`
+- `docker compose --help`
+- `docker compose ps`
+- `docker compose top`
+- `docker compose down`
