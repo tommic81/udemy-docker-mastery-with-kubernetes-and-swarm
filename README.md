@@ -1707,3 +1707,122 @@ volumes:
   - docker service
   - docker stack
   - docker secret 
+  
+### Create a First Service and Scale it
+- [Deploy services to a swarm](https://docs.docker.com/engine/swarm/services/)
+
+```
+docker info
+ Swarm: inactive
+ 
+docker swarm init
+Swarm initialized: current node (sosat3ts4olba8y6s702cmtev) is now a manager.
+
+To add a worker to this swarm, run the following command:
+
+    docker swarm join --token SWMTKN-1-4stpm6upyt2qcn4c42hqdknzcvwlks2fpcc5o23g9p7fo2vre8-79so4w2vmb0rr1c5fr2dosj1t 192.168.65.3:2377
+
+To add a manager to this swarm, run 'docker swarm join-token manager' and follow the instructions. 
+```
+
+- `docker swarm init` - initiates the swarm
+   - Lots of PKI and security automation
+   - Root Signing Certificate created for our Swarm
+   - Certificate is issued for first Manager node
+   - Join tokens are created
+- Raft database created to store root CA, configs and secrets
+   - Encrypted by default on disk (1.13+)
+   - No need for another key/value system to hold orchestration/secrets
+   - Replicates logs amongst Managers via mutual TLS in "control plane"
+   
+
+```
+docker node ls
+ID                            HOSTNAME         STATUS    AVAILABILITY   MANAGER STATUS   ENGINE VERSION
+sosat3ts4olba8y6s702cmtev *   docker-desktop   Ready     Active         Leader           27.3.1
+
+
+docker service --help
+
+Usage:  docker service COMMAND
+
+Manage Swarm services
+
+Commands:
+  create      Create a new service
+  inspect     Display detailed information on one or more services
+  logs        Fetch the logs of a service or task
+  ls          List services
+  ps          List the tasks of one or more services
+  rm          Remove one or more services
+  rollback    Revert changes to a service's configuration
+  scale       Scale one or multiple replicated services
+  update      Update a service
+```
+
+```
+docker service create alpine ping 8.8.8.8
+86szbd1yitdxry2t7y0xrclxs
+overall progress: 1 out of 1 tasks
+1/1: running   [==================================================>]
+verify: Service 86szbd1yitdxry2t7y0xrclxs converged
+
+docker service ls
+ID             NAME                MODE         REPLICAS   IMAGE           PORTS
+86szbd1yitdx   priceless_maxwell   replicated   1/1        alpine:latest
+
+
+docker service ps priceless_maxwell
+ID             NAME                  IMAGE           NODE             DESIRED STATE   CURRENT STATE           ERROR     PORTS
+jql7g5tzht0i   priceless_maxwell.1   alpine:latest   docker-desktop   Running         Running 2 minutes ago
+PS C:\Users\tommi\IT-Learning\Courses\udemy-docker-mastery-with-kubernetes-and-swarm>
+
+
+docker service update 86szbd1yitdx --replicas 3
+86szbd1yitdx
+overall progress: 3 out of 3 tasks
+1/3: running   [==================================================>]
+2/3: running   [==================================================>]
+3/3: running   [==================================================>]
+verify: Service 86szbd1yitdx converged
+```
+- Help
+```
+docker service update --help
+
+Usage:  docker service update [OPTIONS] SERVICE
+
+Update a service
+
+Options:
+      --args command                       Service command args
+      --cap-add list                       Add Linux capabilities
+      --cap-drop list                      Drop Linux capabilities
+      --config-add config                  Add or update a config file on
+                                           a service
+      --config-rm list                     Remove a configuration file
+      --constraint-add list                Add or update a placement
+      
+```
+- Docker Swarm will try to re-run failing container
+```
+docker container rm -f priceless_maxwell.1.jql7g5tzht0itl489ac34goho
+priceless_maxwell.1.jql7g5tzht0itl489ac34goho      
+
+
+docker service ps priceless_maxwell                                 es\udemy-docker-mastery-with-kubernetes-and-swarm>
+ID             NAME                      IMAGE           NODE             DESIRED STATE   CURRENT STATE                ERROR                         PORTS
+nrj6hin0ieh0   priceless_maxwell.1       alpine:latest   docker-desktop   Running         Running about a minute ago   
+jql7g5tzht0i    \_ priceless_maxwell.1   alpine:latest   docker-desktop   Shutdown        Failed about a minute ago    "task: non-zero exit (137)"
+moxe109fc09v   priceless_maxwell.2       alpine:latest   docker-desktop   Running         Running 9 minutes ago        
+578gr57at1k6   priceless_maxwell.3       alpine:latest   docker-desktop   Running         Running 9 minutes ago 
+```
+- To remove the containers we need remove the whole service
+
+```
+docker service rm priceless_maxwell
+priceless_maxwell 
+
+docker container ls
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+```
