@@ -1688,3 +1688,22 @@ volumes:
   drupal-themes:
 
 ```
+## Swarm Intro and Creating a 3-Node    Swarm Cluster
+
+- [Docker 1.12 Swarm Mode Deep Dive Part 1: Topology](https://www.youtube.com/watch?v=dooPhkXT9yI)
+- [Docker 1.12 Swarm Mode Deep Dive Part 2: Orchestration](https://www.youtube.com/watch?v=_F6PSP-qhdA)
+- [Heart of the SwarmKit: Topology Management](https://speakerdeck.com/aluzzardi/heart-of-the-swarmkit-topology-management)
+- [Heart of the SwarmKit: Store, Topology & Object Model](https://www.youtube.com/watch?v=EmePhjGnCXY)
+- [thesecretlivesofdata.com](https://thesecretlivesofdata.com/raft/)
+
+### Swarm Mode: Built-In Orchestration
+- Swarm Mode is a clustering solution built inside Docker
+- Not related to Swarm "classic" for pre-1.12 versions
+- Added in 1.12 (Summer 2016) via SwarmKit toolkit
+- Enhanced in 1.13 (January 2017) via Stacks and Secrets
+- Not enabled by default, new commands once enabled
+  - docker swarm
+  - docker node
+  - docker service
+  - docker stack
+  - docker secret 
