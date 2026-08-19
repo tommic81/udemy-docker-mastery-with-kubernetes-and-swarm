@@ -1598,3 +1598,34 @@ volumes:
   drupal-sites:
   drupal-themes:
 ```
+### Adding Image Building to Compose Files
+- [Compose Build Specification](https://docs.docker.com/reference/compose-file/build/)
+- Compose can build custom images: `docker compose up`
+- Rebuild with: `docker compose build`
+
+```
+# version isn't needed as of 2020 for docker compose CLI. 
+# All 2.x and 3.x features supported
+# version: '2'
+
+# based off compose-sample-2, only we build nginx.conf into image
+# uses sample HTML static site from https://startbootstrap.com/themes/agency/
+
+services:
+  proxy:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    # note we don't require an image name here, because we're building
+    # a new image and compose automatically tags it with the service name
+    # but if you want to hardcode the name to something differnt, you can set it
+    image: nginx-custom
+    ports:
+      - '80:80'
+  web:
+    image: httpd
+    volumes:
+      - ./html:/usr/local/apache2/htdocs/
+``` 
+
+- `docker compose down --rmi local` - removing built images 
