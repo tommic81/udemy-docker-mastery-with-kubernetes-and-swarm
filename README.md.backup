@@ -1629,3 +1629,62 @@ services:
 ``` 
 
 - `docker compose down --rmi local` - removing built images 
+
+### Compose Assignment 2: Compose for Image Building
+- MariaDB settings:
+  - MARIADB_ROOT_PASSWORD
+  - MARIADB_DATABASE
+  - MARIADB_USER
+  - MARIADB_PASSWORD
+- [MariaDB Docker Hub](https://hub.docker.com/_/mariadb)
+- Dockerfile
+```
+FROM drupal:9
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /var/www/html/themes
+
+RUN git clone --branch 8.x-4.x --single-branch --depth 1 https://git.drupalcode.org/project/bootstrap.git \
+    && chown -R www-data:www-data bootstrap
+
+WORKDIR /var/www/html
+```
+- docker-compose
+```
+# version isn't needed as of 2020 for docker compose CLI. 
+# All 2.x and 3.x features supported
+# version: '2'
+# NOTE: move this answer file up a directory so it'll work
+
+services:
+
+  drupal:
+    image: custom-drupal
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - drupal-modules:/var/www/html/modules
+      - drupal-profiles:/var/www/html/profiles       
+      - drupal-sites:/var/www/html/sites      
+      - drupal-themes:/var/www/html/themes
+ 
+  postgres:
+    image: postgres:14
+    environment:
+      - POSTGRES_PASSWORD=mypasswd
+    volumes:
+      - drupal-data:/var/lib/postgresql/data
+
+volumes:
+  drupal-data:
+  drupal-modules:
+  drupal-profiles:
+  drupal-sites:
+  drupal-themes:
+
+```
