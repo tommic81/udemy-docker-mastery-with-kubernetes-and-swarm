@@ -133,4 +133,14 @@ Multipass creates full Ubuntu server VM on your Host machine using various virtu
 Once you have Multipass VM's created, then install docker and/or kubernetes inside them (`multipass shell <name>` gets you into the VM shell, `multipass mount` can connect a host directory into the VM, and `multipass transfer` can copy files in.)
 
 Background on Docker Machine depreciation
-docker-machine which was used to create VMs with docker pre-installed. The last release from 2019 is archived on [github](https://github.com/docker-archive-public/docker.machine/releases/tag/v0.16.2). There isn't anything wrong with docker machine, Docker simply shifted focus from creating virtual machines. Today there are better alternatives like [multipass](https://canonical.com/multipass). For the course, you can still choose to use docker-machine but multipass is the best option. You can see me discuss multipass on my live show.
+docker-machine which was used to create VMs with docker pre-installed. The last release from 2019 is archived on [github](https://github.com/docker-archive-public/docker.machine/releases/tag/v0.16.2). There isn't anything wrong with docker machine, Docker simply shifted focus from creating virtual machines. Today there are better alternatives like [multipass](https://canonical.com/multipass). For the course, you can still choose to use docker-machine but multipass is the best option. You can see me discuss multipass on my [live show](https://www.youtube.com/watch?v=0Jipb9fhpIw&t=641s).
+
+## Jan 2025: Bug in Play-with-Docker Swarm networking
+
+Read this if you're using Play-with-Docker to run these Swarm examples.
+
+As of December 2024, there's a bug in Play with Docker's Swarm networking that somehow prevents Swarm from auto-creating the default bridge network `docker_gwbridge`. You'll see that network listed in the next Udemy Lecture, and if you do a docker network ls in your PWD instances after Swarm has been initialized and you find the `docker_gwbridge` missing, then you can manually create it, which should fix the issue.
+
+`docker network create -d bridge docker_gwbridge`
+
+Once I've confirmed that Docker's fixed the issue, I'll remove this Lecture.

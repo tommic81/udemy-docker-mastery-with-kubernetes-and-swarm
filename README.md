@@ -1873,3 +1873,24 @@ docker swarm init --advertise-addr <public IP address of digital ocean host>
 - `docker service ls`
 - `docker node ps`
 - `docker service ps <service name>`
+
+## Swarm Basic Features
+### Scaling out with Overlay Networking
+- Overlay Multi-Host Networking
+  - Just choose --driver overlay when creating network
+  - For container-to-container traffic inside a single Swarm
+  - Optional IPSec (AES) encryption on network creation
+  - Each service can be connected to multiple networks
+  - (e.g. front-end, back-end)
+  
+```
+docker network create --driver overlay mydrupal
+
+docker service create --name psql --network mydrupal -e POSTGRES_PASSWORD=mypass postgress
+
+docker service create --name drupal --network mydrupal -p 80:80 drupal
+
+watch docker service ls
+
+docker service ps drupal
+```
