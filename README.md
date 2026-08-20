@@ -1894,3 +1894,48 @@ watch docker service ls
 
 docker service ps drupal
 ```
+
+### Scaling out with Routing Mesh
+- [Use Swarm mode routing mesh](https://docs.docker.com/engine/swarm/ingress/)
+- Routing Mesh
+  - Routes ingress (incoming) packets for a Service to proper Task
+  - Spans all nodes in Swarm
+  - Uses IPVS from Linux Kernel
+  - Load balances Swarm Services across their Tasks
+  - Two ways this works:
+  - Container-to-container in a Overlay network (uses VIP)
+  - External traffic incoming to published ports (all nodes listen)
+  - This is stateless load balancing
+  - This LB is at OSI Layer 3 (TCP), not Layer 4 (DNS)
+  - Both limitation can be overcome with:
+  - Nginx or HAProxy LB proxy, or:
+  - Docker Enterprise Edition, which comes with built-in L4 web
+proxy
+  
+```
+docker service create --name search --replicas 3 -p 9200:9200 elasticsearch:2
+
+docker service ps search 
+
+curl localhost:9200
+```
+### Assignment: Create a Multi-Service Multi-Node Web App
+```
+docker network create -d overlay backend
+
+docker network create -d overlay frontend
+
+docker service create --name vote -p 80:80 --network frontend --replicas 2 bretfisher/examplevotingapp_vote
+
+docker service create --name redis --network frontend --replicas 1 redis:3.2
+
+docker service create --name worker  --network frontend --network backend bretfisher/examplevotingapp_worker
+
+docker service create --name db --network backend -e POSTGRES_HOST_AUTH_METHOD=trust --mount type=volume,source=db-data,target=/var/lib/postgresql/data postgres:9.4
+
+docker service create --name result --network backend -p 5001:80 bretfisher/examplevotingapp_result
+
+docker service ls
+
+docker service logs worker
+```
