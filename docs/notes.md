@@ -101,3 +101,36 @@ USER 1000:1000
 Note: When setting a Dockerfile's USER, use numbers, which work better in Kubernetes than using names.
 
 Note 2: If ps doesn't work in your container, you may need to install it. In debian-based images with apt, you can add it with apt-get update && apt-get install procps
+
+## UI Change For Service Create/Update
+
+You may notice that when using `docker service create`  and `update`, that the CLI acts differently for some Lectures then your own Docker. This is due to a change in the way Docker CLI shows the service commands in 2017.
+
+--detach is a new option that changes the CLI response after you run a command.
+
+This is a good thing, and doesn't affect the functionality of Swarm. It's just a UI difference. I use various 2017 versions of Docker in this course, so you may see different output for your own service create/update commands vs. mine, which is fine.
+
+#### History of changes to CLI output for service create/update:
+
+1. Before 17.05, the service commands would immediately return to your shell prompt and the containers would be scheduled in the background (asynchronously). To check if they deployed properly you would need to use docker service ls and docker service ps.
+2. Starting in 17.05 the service commands were given a --detach  option, which defaulted to true , but warned you each time about a future change to false . The create/update commands were still asynchronous.
+3. Starting in 17.10 the --detach  default changes to false , so you'll always see the UI wait synchronously while service tasks are deployed/updated, unless you set --detach true  in each command.
+
+#### For all stable versions after 17.12, just remember:
+
+- Use the defaults if you're interactive at the CLI, typing commands yourself.
+- Use `--detach true`  if you're using automation or shell scripts to get things done.
+
+
+## Use Multipass to create Docker, Swarm, and K8s VMs
+You'll hear me talking about Docker Machine in various lectures. Docker has stopped support for docker-machine, and we mostly have better tools for this now.
+
+#### Use Multipass as a better option for managing multiple local VMs
+If you'd like to create multiple VM's for setting up Swarm or K8s clusters, use [multipass.run](https://canonical.com/multipass)
+
+Multipass creates full Ubuntu server VM on your Host machine using various virtualization options (hyper-v, VirtualBox, hyperkit, etc.). It's super fast to create one and easy to use.  Their [website has a quick walkthrough](https://canonical.com/multipass) for each host OS type.
+
+Once you have Multipass VM's created, then install docker and/or kubernetes inside them (`multipass shell <name>` gets you into the VM shell, `multipass mount` can connect a host directory into the VM, and `multipass transfer` can copy files in.)
+
+Background on Docker Machine depreciation
+docker-machine which was used to create VMs with docker pre-installed. The last release from 2019 is archived on [github](https://github.com/docker-archive-public/docker.machine/releases/tag/v0.16.2). There isn't anything wrong with docker machine, Docker simply shifted focus from creating virtual machines. Today there are better alternatives like [multipass](https://canonical.com/multipass). For the course, you can still choose to use docker-machine but multipass is the best option. You can see me discuss multipass on my [live show](https://www.youtube.com/watch?v=0Jipb9fhpIw&t=641s).

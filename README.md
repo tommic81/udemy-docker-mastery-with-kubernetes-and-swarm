@@ -1826,3 +1826,50 @@ priceless_maxwell
 docker container ls
 CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
 ```
+
+### Creating 3-Node Swarm Cluster
+- [How to Add SSH Keys to New or Existing Droplets](https://docs.digitalocean.com/products/droplets/how-to/add-ssh-keys/)
+- [Docker Swarm Firewall Ports](https://www.bretfisher.com/blog/docker-swarm-firewall-ports)
+- [How To Configure Custom Connection Options for your SSH Client](https://www.digitalocean.com/community/tutorials/how-to-configure-custom-connection-options-for-your-ssh-client)
+- [Deprecated and retired Docker products and features](https://docs.docker.com/retired/)
+- [DigitalOcean](https://www.digitalocean.com/?refcode=ee97875d52fa)
+- Creating 3-Node Swarm: Host Options
+  - A. play-with-docker.com
+    - Only needs a browser, but resets after 4 hours
+  - B. docker-machine + VirtualBox
+    - Free and runs locally, but requires a machine with 8GB memory
+  - C. Digital Ocean + Docker install
+    - Most like a production setup, but costs $5-10/node/month while learning
+    - Use my referral code in section resources to get $10 free
+    - D. Roll your own
+      - docker-machine can provision machines for Amazon, Azure, DO, Google,etc.
+      - Install docker anywhere with get.docker.com
+      
+#### Play with Docker
+```
+docker-machine create node1
+
+docker-machine create node2
+
+docker-machine create node3
+```
+####  Digital Ocean
+- Create Droplets
+- Select: **Ubuntu**
+- Select the closest datacenter
+- Name the Droplets: Node1, Node2, Node3
+- install Docker
+
+#### Setup Swarm
+```
+# on node1
+docker swarm init --advertise-addr <public IP address of digital ocean host>
+```
+- Copy `docker swarm join` command and use it on the nodes 2 and 3
+
+- `docker node update --role manager node2` - sets a swarm node2 as a manager
+- `docker swarm join-token manager` - joining to a swarm as a manager
+- `docker service create --replicas 3 alpine ping 8.8.8.8` - create 3 containers in a swarm
+- `docker service ls`
+- `docker node ps`
+- `docker service ps <service name>`
