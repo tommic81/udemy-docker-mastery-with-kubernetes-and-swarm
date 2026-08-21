@@ -2024,4 +2024,28 @@ docker stack services voteapp
 - They look like files in container but are actually in-memory fs
 - `/run/secrets/<secret_name> or /run/secrets/
 <secret_alias>`
-• Local docker-compose can use file-based secrets, but not secure
+- Local docker-compose can use file-based secrets, but not secure
+
+### Using Secrets in Swarm Services
+- [Manage sensitive data with Docker secrets](https://docs.docker.com/engine/swarm/secrets/)
+
+```
+docker secret create psql_user psql_user.txt
+
+echo "myDBpassWORD" | docker secret create psql_pass -
+
+docker secret ls
+```
+- Only services and containers assigned to the secrets have access
+
+```
+docker service create --name psql --secret psql_user --secret psql_pass -e POSTGRES_PASSWORD_FILE=/run/secrets/psql_pass -e POSTGRES_USER_FILE=/run/secrets/psql_user postgres
+
+docker service ps psql
+
+docker exec -it psql.1.cscswefwf bash 
+
+# ls /run/secrets/ 
+
+# cat /run/secrets/psql_user
+```
