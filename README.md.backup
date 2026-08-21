@@ -2049,3 +2049,37 @@ docker exec -it psql.1.cscswefwf bash
 
 # cat /run/secrets/psql_user
 ```
+- `docker service update --secret-rm` - removing a secret. Causes restarting a container.
+
+### Using Secrets with Swarm Stacks
+- [Secrets](https://docs.docker.com/reference/compose-file/secrets/)
+
+```
+docker service create --name search --replicas 3 -p 9200:9200 elasticsearch:2
+```
+- docker-compose.yml
+
+```yaml
+version: "3.9"
+
+services:
+  psql:
+    image: postgres
+    secrets:
+      - psql_user
+      - psql_password
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/secrets/psql_password
+      POSTGRES_USER_FILE: /run/secrets/psql_user
+
+secrets:
+  psql_user:
+    file: ./psql_user.txt
+  psql_password:
+    file: ./psql_password.txt
+
+```
+
+```
+docker stack deploy -c docker-compose.yml mydb
+```
