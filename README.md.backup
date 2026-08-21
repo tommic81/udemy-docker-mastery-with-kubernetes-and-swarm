@@ -1939,3 +1939,70 @@ docker service ls
 
 docker service logs worker
 ```
+### Swarm Stacks and Production Grade Compose
+- [compose or single node swarm](https://github.com/BretFisher/ama/discussions/146)
+- In 1.13 Docker adds a new layer of abstraction to Swarm called
+Stacks
+- Stacks accept Compose files as their declarative definition for
+services, networks, and volumes
+- We use `docker stack deploy` rather then docker service create
+- Stacks manages all those objects for us, including overlay network
+per stack. Adds stack name to start of their name
+- New **deploy:** key in Compose file. Can't do **build:**
+- Compose now ignores deploy:, Swarm ignores **build:**
+- **docker-compose** cli not needed on Swarm server
+
+```yaml
+version: "3.9"
+services:
+  redis:
+    image: redis:alpine
+    networks:
+      - frontend
+  db:
+    image: postgres:13
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    deploy:
+  vote:
+    image: bretfisher/examplevotingapp_vote
+    ports:
+      - "5000:80"
+    networks:
+      - frontend
+    deploy:
+      mode: global
+  result:
+    image: bretfisher/examplevotingapp_result
+    ports:
+      - "5001:80"
+    networks:
+      - backend
+  worker:
+    image: bretfisher/examplevotingapp_worker
+    networks:
+      - frontend
+      - backend
+    deploy:
+      mode: global
+networks:
+  frontend:
+  backend:
+volumes:
+  db-data:
+
+```
+
+```
+docker stack deploy -c example-voting-app-stack.yml voteapp
+
+docker stack ls
+
+docker stack ps voteapp
+
+docker stack services voteapp
+```
