@@ -2131,4 +2131,37 @@ secrets:
 ```
 echo "efefewfewf" | docker secret create psql-pw -
 docker stack deploy -c docker-compose.yml drupal
+
+docker stack ps drupal
+```
+
+## Swarm App Lifecycle
+### Full App Lifecycle: Dev, Build and Deploy With a Single Compose Design
+- [Extend your Compose file](http://docs.docker.com/compose/how-tos/multiple-compose-files/extends/#multiple-compose-files)
+- [Use Compose in production](https://docs.docker.com/compose/how-tos/production/)
+
+- Single set of Compose files for:
+  - Local `docker-compose up` CI environment
+  - Remote `docker stack deploy` production environment
+  - Note: `docker-compose -f a.yml -f b.yml config`
+mostly works
+  - Note: Compose extends: doesn't work yet in Stacks
+  - Fast moving part of toolset. Expect this to change/fix.
+  
+#### Example: swarm-stack-3
+- Files:
+  - docker-compose.yml - default file
+  - docker-compose.override.yml - always read by docker
+  - docker-compose.test.yml,  docker-compose.test.yml - if we want to use those files for ovewritting we need specify it. They are not loaded by default.
+  
+```
+# default files are loaded
+docker compose up -d
+
+# loading test configuration
+docker compose  -f docker-compose.yml -f docker-compose.test.yml up -d
+
+
+# printing prod configuration
+docker compose  -f docker-compose.yml -f docker-compose.prod.yml config
 ```
