@@ -2206,3 +2206,120 @@ docker service update --force web
 # removing the service
 docker service rm web
 ```
+
+### Healthchecks in Dockerfiles
+- [php-docker-good-defaults](https://github.com/BretFisher/php-docker-good-defaults)
+- [Compose file reference](https://docs.docker.com/reference/compose-file/#healthcheck)
+- [HEALTHCHECK](https://docs.docker.com/reference/dockerfile#healthcheck)
+- **HEALTHCHECK** was added in 1.12
+- Supported in Dockerfile, Compose YAML, docker run, and
+Swarm Services
+- Docker engine will exec's the command in the container
+- (e.g. curl localhost)
+- It expects **exit 0** (OK) or **exit 1** (Error)
+- Three container states: starting, healthy, unhealthy
+- Much better then "is binary still running?"
+- Not a external monitoring replacement
+- Healthcheck status shows up in docker container ls
+- Check last 5 healthchecks with docker container inspect
+- Docker run does nothing with healthchecks
+- Services will replace tasks if they fail healthcheck
+- Service updates wait for them before continuing
+
+#### Docker Run Example
+
+```
+docker run \
+--health-cmd="curl -f localhost:9200/_cluster/health || false" \
+--health-interval=5s \
+--health-retries=3 \
+--health-timeout=2s \
+--health-start-period=15s \
+elasticsearch:2
+```
+
+####  Dockerfile Examples
+
+- Options for healthcheck command
+  - --interval=DURATION (default: 30s)
+  - --timeout=DURATION (default: 30s)
+  - --start-period=DURATION (default: 0s) (17.09+)
+  - --retries=N (default: 3)
+- Basic command using default options
+  - HEALTHCHECK curl -f http://localhost/ || false
+- Custom options with the command
+  - HEALTHCHECK --timeout=2s --interval=3s --retries=3 \
+  - CMD curl -f http://localhost/ || exit 1
+
+#### Nginx Dockerfile
+- Static website running in Nginx, just test default URL
+
+```
+FROM nginx:1.13
+HEALTHCHECK --interval=30s --timeout=3s \
+CMD curl -f http://localhost/ || exit 1
+```
+
+#### PHP Nginx Dockerfile
+
+- PHP-FPM running behind Nginx, test the Nginx and FPM status URLs
+
+```
+FROM your-nginx-php-fpm-combo-image
+# don't do this if php-fpm is another container
+# must enable php-fpm ping/status in pool.ini
+# must forward /ping and /status urls from nginx to php-fpm
+HEALTHCHECK --interval=5s --timeout=3s \
+CMD curl -f http://localhost/ping || exit 1
+```
+
+####  Postgres Dockerfile
+
+- Use a PostgreSQL utility to test for ready state
+
+```
+FROM postgres
+# specify real user with -U to prevent errors in log
+HEALTHCHECK --interval=5s --timeout=3s \
+CMD pg_isready -U postgres || exit 1
+```
+
+#### Compose/Stack Files
+
+```
+version: "2.1" (minimum for healthchecks)
+services:
+web:
+image: nginx
+healthcheck:
+test: ["CMD", "curl", "-f", "http://localhost"]
+interval: 1m30s
+timeout: 10s
+retries: 3
+start_period: 1m #version 3.4 minimum
+
+```
+#### Example
+- Plain container
+```
+docker container run --name p1 -d postgres
+
+docker container ls
+
+docker container run --name p2 -d --health-cmd="pg_isready -U postgres || exit 1"  postgres
+
+docker container ls
+
+docker container inspect p2
+
+
+```
+- Service
+```
+# no healthcheck
+docker service create --name p1 postgres
+
+# with a healthcheck
+docker service create --name p2 --health-cmd="pg_isready -U postgres || exit 1"  postgres
+
+```
