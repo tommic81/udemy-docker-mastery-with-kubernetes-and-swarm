@@ -2323,3 +2323,54 @@ docker service create --name p1 postgres
 docker service create --name p2 --health-cmd="pg_isready -U postgres || exit 1"  postgres
 
 ```
+## Container Registries: Image Storage and Distribution
+### Docker Hub: Digging Deeper
+- [Dockerhub](https://hub.docker.com/)
+#### Container Registries
+- An image registry needs to be part of your container plan
+- More Docker Hub details including auto-build
+- How Docker Store (store.docker.com) is different then Hub
+- How Docker Cloud (cloud.docker.com) is different then Hub
+- Use new Swarms feature in Cloud to connect Mac/Win to
+Swarm
+- Install and use Docker Registry as private image store
+- 3rd Party registry options
+
+#### Docker Hub
+- The most popular public image registry
+- It's really Docker Registry plus lightweight image building
+- Let's explore more of the features of Docker Hub
+- Link GitHub/BitBucket to Hub and auto-build images on
+commit
+- Chain image building together
+
+#### Docker Store
+- Download Docker "Editions"
+- Find certified Docker/Swarm plugins and commercial certified
+images
+
+#### Docker Cloud: CI/CD and Server Ops
+- Web based Docker Swarm creation/management
+- Uses popular cloud hosters and bring-your-own-server
+- Automated image building, testing, and deployment
+- More advanced then what Docker Hub does for free
+- Includes an image security scanning service
+
+### Understanding Docker Registry
+- [Mirror the Docker Hub library](https://docs.docker.com/docker-hub/image-library/mirror/)
+- [Distribution Registry](https://distribution.github.io/distribution/)
+- [Garbage collection](https://distribution.github.io/distribution/about/garbage-collection/)
+
+#### Running Docker Registry
+- A private image registry for your network
+- Part of the docker/distribution GitHub repo
+- The de facto in private container registries
+- Not as full featured as Hub or others, no web UI, basic auth
+only
+- At its core: a web API and storage system, written in Go
+- Storage supports local, S3/Azure/Alibaba/Google Cloud, and
+OpenStack Swift
+- Look in section resources for links to:
+  - Secure your Registry with TLS
+  - Storage cleanup via Garbage Collection
+  - Enable Hub caching via "--registry-mirror"
