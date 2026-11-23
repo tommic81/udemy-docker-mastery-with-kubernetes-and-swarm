@@ -2374,3 +2374,78 @@ OpenStack Swift
   - Secure your Registry with TLS
   - Storage cleanup via Garbage Collection
   - Enable Hub caching via "--registry-mirror"
+  
+
+### Run a Private Docker Registry
+- Run the registry image on default port 5000
+- Re-tag an existing image and push it to your new registry
+- Remove that image from local cache and pull it from new
+registry
+- Re-create registry using a bind mount and see how it stores
+data
+- "Secure by Default": Docker won't talk to registry without
+HTTPS
+- Except, localhost (127.0.0.0/8)
+- For remote self-signed TLS, enable "insecure-registry" in engine
+
+```
+docker container run -d -p 5000:5000 --name registry registry
+
+docker pull hello-world
+
+docker run hello-world
+
+# tagging it to let docker deamon know where to put an image
+docker tag hello-world 127.0.0.1:5000/hello-world
+# pushes to a local registry
+docker push 127.0.0.1:5000/hello-world
+
+docker image remove 127.0.0.1:5000/hello-world
+
+docker pull 127.0.0.1:5000/hello-world
+
+# removing our registry
+
+docker container kill registry
+
+docker container rm registry
+
+# starting with a volume 
+docker container run -d -p 5000:5000 --name registry -v $(pwd)/registry-data:/var/lib/registry registry
+
+tree registry-data
+```
+- [Docker registry for Linux Part 1](https://training.play-with-docker.com/linux-registry-part1/)
+- [Docker registry for Linux Parts 2 & 3](https://training.play-with-docker.com/linux-registry-part2/)
+- [Play with Docker Classroom](https://training.play-with-docker.com/)
+
+### Using Docker Registry With Swarm
+- Works the same way as localhost
+- Because of Routing Mesh, all nodes can see 127.0.0.1:5000
+- Remember to decide how to store images (volume driver)
+- NOTE: All nodes must be able to access images
+- ProTip: Use a hosted SaaS registry if possible
+
+```
+docker service create --name registry --publish 5000:5000 registry
+
+docker service ps registry
+
+docker pull hello-world
+
+docker tag hello-world 127.0.0.1:5000/hello-world
+
+docker push 127.0.0.1:5000/hello-world
+
+docker pull nginx
+
+docker tag nginx 127.0.0.1:5000/nginx
+
+docker push 127.0.0.1:5000/nginx
+
+docker service create --name nginx -p 80:80 --replicas 5 --detach=false 127.0.0.1:5000/nginx
+
+docker service ps nginx
+
+```
+- [Awesome Docker](https://github.com/veggiemonk/awesome-docker#hosting-images-registries)
