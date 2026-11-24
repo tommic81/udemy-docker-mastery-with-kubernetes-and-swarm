@@ -2449,3 +2449,5 @@ docker service ps nginx
 
 ```
 - [Awesome Docker](https://github.com/veggiemonk/awesome-docker#hosting-images-registries)
+- [Docker Swarm 2020 Project Update: DevOps and Docker Live Show (Ep 74)](https://www.youtube.com/watch?v=L5N43aQQArw&t=223s)
+- [Everything You Thought You Already Knew About Orchestration](https://www.youtube.com/watch?v=Qsv-q8WbIZY)
