@@ -2451,3 +2451,57 @@ docker service ps nginx
 - [Awesome Docker](https://github.com/veggiemonk/awesome-docker#hosting-images-registries)
 - [Docker Swarm 2020 Project Update: DevOps and Docker Live Show (Ep 74)](https://www.youtube.com/watch?v=L5N43aQQArw&t=223s)
 - [Everything You Thought You Already Knew About Orchestration](https://www.youtube.com/watch?v=Qsv-q8WbIZY)
+
+## What and Why of Kubernetes
+-[Production-Grade Container Orchestration](https://kubernetes.io/)
+-[Kubernetes WiKi](https://en.wikipedia.org/wiki/Kubernetes)
+### What is Kubernetes?
+- Kubernetes = popular container orchestrator
+- Container Orchestration = Make many servers act like one
+- Released by Google in 2014, maintained by large community
+- Runs on top of Docker (usually) as a set of APIs in containers
+- Provides API/CLI to manage containers across servers
+- Many clouds provide it for you
+- Many vendors make a "distribution" of it
+### Why Kubernetes
+- [Kubernetes Partners](https://kubernetes.io/partners/#conformance)
+- Review "Swarm Mode: Built-In Orchestration"
+- Orchestration: Next logical step in journey to faster DevOps
+- First, understand why you *may* need orchestration
+- Not every solution needs orchestration
+- Servers + Change Rate = Benefit of orchestration
+- Then, decide which orchestrator
+- If Kubernetes, decide which distribution
+- cloud or self-managed (Rancher, OpenShift,
+Canonical, VMware Tanzu)
+- Don't usually need pure upstream "vanilla
+
+### Kubernetes or Swarm
+- Review "Swarm Mode: Built-In Orchestration"
+-  Kubernetes and Swarm are both container orchestrators
+- Both are solid platforms but Kubernetes has more vendor backing
+- Swarm: Easier to deploy/manage
+- Kubernetes: More features and flexibility
+- What's right for you? Understand both and know
+your requirements
+#### Advantages of Swarm
+- Comes with Docker, single vendor container platform
+- Easiest orchestrator to deploy/manage yourself
+- Follows 80/20 rule, 20% of features for 80% of use cases
+- Runs anywhere Docker does:
+- local, cloud, datacenter
+- ARM, Windows, 32-bit
+- Secure by default
+- Easier to troubleshoot
+
+#### Advantages of Kubernetes
+- Clouds will deploy/manage Kubernetes for you
+- Infrastructure vendors are making their own distributions
+- Widest adoption and community
+- Flexible: Covers widest set of use cases
+- "Kubernetes first" vendor support
+- "No one ever got fired for buying IBM"
+- Picking solutions isn't 100% rational
+- Trendy, will benefit your career
+- CIO/CTO Checkbox
+
