@@ -2495,3 +2495,79 @@ your requirements
 - Easier to troubleshoot
 
 #### Advantages of Kubernetes
+- Clouds will deploy/manage Kubernetes for you
+- Infrastructure vendors are making their own distributions
+- Widest adoption and community
+- Flexible: Covers widest set of use cases
+- "Kubernetes first" vendor support
+- "No one ever got fired for buying IBM"
+- Picking solutions isn't 100% rational
+- Trendy, will benefit your career
+- CIO/CTO Checkbox
+
+## Kubernetes Architecture and Install
+### Kubernetes Architecture
+- [Kubernetes Components](https://kubernetes.io/docs/concepts/overview/components/#master-components)
+#### System Parts
+- Kubernetes: The whole orchestration system, aka "cluster"
+  - Short names: Written K8s. Sounds like "k-eights" or "kates"
+- Kubectl: CLI to configure Kubernetes and manage apps
+  - Sounds, like "cube control" or "cube cuttle"
+- Node: Single server in the Kubernetes cluster
+- Kubelet: Kubernetes agent running on nodes
+- Control Plane: The management nodes
+  - Includes services that manage the cluster
+  - Includes API server, scheduler, controller
+manager, etcd, and more
+- ETCD - configuration
+- API - the way we talk to the cluster
+- Scheduler - wher, how your containers are placed
+- Controller Manager - watches a state of the whole cluster
+- CoreDNS
+- Node
+  - Node neads an agent running (Kubelet)
+  - Kube-proxy to contol the networking
+  
+### Kubernetes local install
+- Kubernetes is a series of containers, CLI's, and configurations
+- Many ways to install. Let's focus on easiest for learning
+- Docker Desktop: Enable in settings
+  - Sets up everything inside Docker's existing Linux VM
+- Rancher Desktop: In case you can't use Docker Desktop
+- Your Own Linux Host or VM: MicroK8s or K3s
+  - Installs Kubernetes right on the OS
+- [Minikube - releases](https://github.com/kubernetes/minikube/releases/)
+- [Microk8s](https://github.com/canonical/microk8s)
+- [Install Tools](https://kubernetes.io/docs/tasks/tools/#install-kubectl-on-windows)
+- [killercoda.com](https://killercoda.com/)
+
+#### Docker Desktop
+- Configures Kubernetes Control Plane on top of Docker runtime
+- Manages kubectl install and certs for connecting to K8s API
+- Easily install, disable, and remove from Docker GUI
+#### Rancher Desktop
+- Similar feature set to Docker Desktop
+- Usually chosen when you can't run Docker Desktop
+- Be sure to enable dockerd (moby) and Kubernetes in settings
+#### MicroK8s
+- Installs Kubernetes (without Docker Engine) directly on Linux
+- Uses snap (rather then apt or yum) for install
+- Control the MicroK8s service via microk8s commands
+- kubectl accessible via microk8s kubectl
+- Add CoreDNS for services to work
+  - microk8s enable dns
+- Add an alias to your shell (.bash_profile)
+  - alias kubectl="microk8s kubectl"
+  
+### Kubernetes Container Abstractions
+- Pod: one or more containers running together on one Node
+  - Basic unit of deployment. Containers are always in pods
+- Controller: For creating/updating pods and other objects
+  - Many types of Controllers inc. Deployment, ReplicaSet,
+StatefulSet, DaemonSet, Job, CronJob, etc.
+- Service: network endpoint to connect to a pod
+- Namespace: Filtered group of objects in cluster
+- Secrets, ConfigMaps, and more
+- [Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
+- [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
+- [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
