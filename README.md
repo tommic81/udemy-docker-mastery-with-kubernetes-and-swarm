@@ -2571,3 +2571,162 @@ StatefulSet, DaemonSet, Job, CronJob, etc.
 - [Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
 - [Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 - [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
+
+## Kubectl run, create and apply
+- [Kubectl](https://kubernetes.io/docs/reference/kubectl/)
+### Creating a Pod with kubectl
+- [Kubectl Quick Reference](https://kubernetes.io/docs/reference/kubectl/quick-reference/)
+- [Kubectl for Docker Users](https://kubernetes.io/docs/reference/kubectl/docker-cli-to-kubectl/)
+- [Command line tool (kubectl)](https://kubernetes.io/docs/reference/kubectl/)
+- [cheatography.com/](https://cheatography.com/tag/docker/)
+- [Kubectl Cheat Sheet](https://cheatography.com/deleted-44122/cheat-sheets/kubectl/)
+- [Kubernetes (k8s) Cheat Sheet](https://cheatography.com/gauravpandey44/cheat-sheets/kubernetes-k8s/)
+- Two ways to deploy Pods (containers): Via commands, or via YAML
+- Pods - Kuberntes concept, layer of abstractions which wraps containers with the same IP and the deployment
+- You create Pod(s) (via CLI, YMAL, or API). Kubernetes then creates the containers inside it.
+- **kubelet** tells the container runtime to create containers for you
+- Every type of resource to run containers uses Pods
+```
+# Are we working?
+> kubectl version
+
+>minikube start
+
+# Run a pod of the nginx web server!
+> kubectl run my-nginx --image nginx
+
+# List the pods
+>kubectl get pods
+
+# See all objects
+> kubectl get all
+
+NAME           READY   STATUS    RESTARTS   AGE
+pod/my-nginx   1/1     Running   0          12s
+
+## This is always listed!!
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   64d
+```
+### First deployment with kubectl create
+- [Using kubectl to Create a Deployment](https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/)
+- [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- Deployment creates ReplicaSet (for each new deployment type)
+- ReplicaSet controller will create Pods
+
+```
+# create a Deployment of the nginx web server!
+# does n
+> kubectl create deployment my-nginx --image nginx
+
+deployment.apps/my-nginx created
+
+# list the pod
+>kubectl get pods
+
+NAME                        READY   STATUS    RESTARTS   AGE
+my-nginx-56d6f5dd87-vw2jb   1/1     Running   0          113s
+# see all objects
+
+> kubectl get all
+
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/my-nginx-56d6f5dd87-vw2jb   1/1     Running   0          2m23s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   65d
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-nginx   1/1     1            1           2m23s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-nginx-56d6f5dd87   1         1         1       2m23s
+
+
+# Remove the single Pod and the Deployment
+> kubectl delete pod my-nginx
+> kubectl delete deployment my-nginx
+```
+
+### Scaling ReplicaSets
+- [ReplicaSet Docs](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
+
+```
+# Start a new deployment for one replica/pod
+> kubectl create deployment my-apache --image httpd
+
+deployment.apps/my-apache created
+
+#  Check our resource status
+> kubectl get all
+
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/my-apache-dcf6f9587-2xqwl   1/1     Running   0          64s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   65d
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-apache   1/1     1            1           64s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-apache-dcf6f9587   1         1         1       64s
+
+# Let's scale it up with another pod
+> kubectl scale deploy/my-apache --replicas 2
+
+deployment.apps/my-apache scaled
+
+> kubectl get all
+
+# 2 pods are running
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/my-apache-dcf6f9587-2xqwl   1/1     Running   0          12m
+pod/my-apache-dcf6f9587-5wzkv   1/1     Running   0          6m50s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   65d
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-apache   2/2     2            2           12m
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-apache-dcf6f9587   2         2         2       12m
+
+> kubectl scale deploy my-apache --replicas 2
+
+# those are the same command
+# deploy = deployment = deployments
+```
+#### What scalling did
+- kubectl scale will *change* the deployment/my-apache record
+- ConfigurationManager will see that **only** replica count has changed
+- It will change the number of pods in ReplicaSet
+- Scheduler sees a new pod is requested, assigns a node
+- Kubelet sees a new pod, tells container runtime to start httpd
+
+### Changes to Kubectl Run
+#### Creating Pods vs. Deployments in 1.18+
+Starting in version 1.18 (released March 2020), the kubectl run command only does one thing: create single pods. There were many reasons for this, but the big ones were to reduce the complexity of how the run command worked and to move other resource creation to the kubectl create command. The idea is that kubectl run is now similar to docker run. It creates a single pod, where docker run creates a single container.
+
+- Create a single pod in 1.18+
+
+`kubectl run nginx --image nginx`
+
+- Create a single pod with a custom command in 1.18+
+
+`kubectl run pingpong --image alpine --command -- ping 1.1.1.1`
+
+- Create a deployment in 1.18+
+
+`kubectl create deployment nginx --image nginx`
+
+- Create a deployment with a custom command in 1.18+
+
+`kubectl create deployment pingpong --image alpine -- ping 1.1.1.1`
+
+Notice the double dash -- which separates the kubectl command options from the COMMAND you want to override when starting the containers.
+
+Also notice that `run` requires the `--command -- <cmd> <arg>` while the `create deployment` just needs `-- <cmd> <arg>` at the end.
+
+For more info on the create deployment options, check out the help at `kubectl create deployment --help`
