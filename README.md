@@ -2693,7 +2693,6 @@ deployment.apps/my-apache   2/2     2            2           12m
 NAME                                  DESIRED   CURRENT   READY   AGE
 replicaset.apps/my-apache-dcf6f9587   2         2         2       12m
 
-> kubectl scale deploy my-apache --replicas 2
 
 # those are the same command
 # deploy = deployment = deployments
@@ -2730,3 +2729,221 @@ Notice the double dash -- which separates the kubectl command options from the C
 Also notice that `run` requires the `--command -- <cmd> <arg>` while the `create deployment` just needs `-- <cmd> <arg>` at the end.
 
 For more info on the create deployment options, check out the help at `kubectl create deployment --help`
+
+## Inspecting Kubernetes
+### Inspecting Resources with Get
+```
+# List our common resources (in the default namespace)
+> kubectl get all
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/my-apache-dcf6f9587-2xqwl   1/1     Running   0          172m
+pod/my-apache-dcf6f9587-5wzkv   1/1     Running   0          166m
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   65d
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/my-apache   2/2     2            2           172m
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/my-apache-dcf6f9587   2         2         2       172m
+
+> kubectl get deploy/my-apache
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE
+my-apache   2/2     2            2           173m
+
+# (if missing my-apache, then recreate)
+> kubectl create deployment my-apache --image httpd --replicas 2
+
+# Show more with a "wide" output
+> kubectl get deploy/my-apache -o wide
+NAME        READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS   IMAGES   SELECTOR
+my-apache   2/2     2            2           3h4m   httpd        httpd    app=my-apache
+
+# Display everything about a resource in YAML
+> kubectl get deploy/my-apache -o yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  creationTimestamp: "2026-11-26T11:09:06Z"
+  generation: 2
+  labels:
+    app: my-apache
+  name: my-apache
+  namespace: default
+  resourceVersion: "176064"
+```
+
+### Inspecting Resources with Describe
+- `kubectl describe` gives more information: 
+  - Deployment summary
+  - ReplicaSet status
+  - Pod template
+  - Old/New ReplicaSet names
+  - Deployment Events
+  
+```
+# Show formatted details about the deployment, including events
+> kubectl describe deploy/my-apache
+
+Name:                   my-apache
+Namespace:              default
+CreationTimestamp:      Thu, 26 Nov 2026 12:09:06 +0100
+Labels:                 app=my-apache
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               app=my-apache
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  app=my-apache
+  Containers:
+   httpd:
+    Image:         httpd
+    Port:          <none>
+    Host Port:     <none>
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+
+> kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+my-apache-dcf6f9587-2xqwl   1/1     Running   0          4h51m
+my-apache-dcf6f9587-5wzkv   1/1     Running   0          4h45m
+
+# Show details about a pod, including events
+> kubectl describe pod/my-apache-dcf6f9587-2xqwl
+Name:             my-apache-dcf6f9587-2xqwl
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             minikube/192.168.49.2
+Start Time:       Thu, 26 Nov 2026 12:09:06 +0100
+Labels:           app=my-apache
+                  pod-template-hash=dcf6f9587
+Annotations:      <none>
+Status:           Running
+IP:               10.244.0.16
+IPs:
+  IP:           10.244.0.16
+Controlled By:  ReplicaSet/my-apache-dcf6f9587
+```
+#### Inspecting Nodes
+- A typical workflow of "high level" to "low level" details
+
+```
+# List all our clusters nodes
+> kubectl get nodes
+NAME       STATUS   ROLES           AGE   VERSION
+minikube   Ready    control-plane   65d   v1.37.0
+
+# List just our node, with more details
+> kubectl get node/minikube -o wide
+NAME       STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE                         KERNEL-VERSION                              CONTAINER-RUNTIME
+minikube   Ready    control-plane   65d   v1.37.0   192.168.49.2   <none>        Debian GNU/Linux 12 (bookworm)   6.18.58.1-microsoft-standard-WSL2 (amd64)   containerd://2.3.4
+
+# Describe the node
+> kubectl describe node/minikube
+Name:               minikube
+Roles:              control-plane
+Labels:             beta.kubernetes.io/arch=amd64
+                    beta.kubernetes.io/os=linux
+                    kubernetes.io/arch=amd64
+                    kubernetes.io/hostname=minikube
+                    kubernetes.io/os=linux
+```
+### Watching Resources
+- Current commands give us a point-in-time status
+- On Linux, we might use a watch kubectl get pods command
+- But kubectl has -w (--watch) built-in!
+
+```
+# Watch a command (without needing watch)
+# Watches what is changing with the pods in real time
+> kubectl get pods -w
+NAME                        READY   STATUS    RESTARTS   AGE
+my-apache-dcf6f9587-2xqwl   1/1     Running   0          6h26m
+my-apache-dcf6f9587-5wzkv   1/1     Running   0          6h20m
+
+# In a separate tab/window
+> kubectl delete pod/my-apache-dcf6f9587-2xqwl
+
+# Watch the pod get re-created
+# See all recent events
+> kubectl get events
+
+# Watch for only future events
+# deleting a pod for testing in another window!!!
+> kubectl get events --watch-only
+LAST SEEN   TYPE     REASON    OBJECT                          MESSAGE
+0s          Normal   Killing   pod/my-apache-dcf6f9587-2xqwl   Stopping container httpd
+0s          Normal   SuccessfulCreate   replicaset/my-apache-dcf6f9587   Created pod: my-apache-dcf6f9587-jkpl8
+0s          Normal   Scheduled          pod/my-apache-dcf6f9587-jkpl8    Successfully assigned default/my-apache-dcf6f9587-jkpl8 to minikube
+0s          Normal   Pulling            pod/my-apache-dcf6f9587-jkpl8    Pulling image "httpd"
+0s          Normal   Pulled             pod/my-apache-dcf6f9587-jkpl8    Successfully pulled image "httpd" in 792ms (793ms including waiting). Image size: 45328379 bytes.
+0s          Normal   Created            pod/my-apache-dcf6f9587-jkpl8    Container created
+0s          Normal   Started            pod/my-apache-dcf6f9587-jkpl8    Container started
+```
+
+### Container Logs in Kubernetes
+- [System Logs](https://kubernetes.io/docs/concepts/cluster-administration/system-logs/)
+- [Logging Architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
+- [Debug Running Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/)
+- [Loki - Git](https://github.com/grafana/loki)
+- [Elastic-stack](https://www.elastic.co/elastic-stack/)
+- [Stern - Git](https://github.com/stern/stern)
+
+```
+# Get a container's logs (picks a random replica, first container only)
+> kubectl logs deploy/my-apache
+
+ # Follow new log entries, and start with the latest log line
+> kubectl logs deploy/my-apache --follow --tail 1
+Found 2 pods, using pod/my-apache-dcf6f9587-5wzkv
+[Fri Nov 27 10:11:23.280312 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+
+
+
+# Get a specific container's logs in a pod
+> kubectl logs pod/my-apache-xx-yy -c httpd
+
+> kubectl get pods
+NAME                        READY   STATUS    RESTARTS       AGE
+my-apache-dcf6f9587-5wzkv   1/1     Running   1 (140m ago)   25h
+my-apache-dcf6f9587-jkpl8   1/1     Running   1 (140m ago)   18h
+
+> kubectl get pods
+NAME                        READY   STATUS    RESTARTS       AGE
+my-apache-dcf6f9587-5wzkv   1/1     Running   1 (148m ago)   25h
+my-apache-dcf6f9587-jkpl8   1/1     Running   1 (148m ago)   19h
+
+# -c - container name in my pod
+> kubectl logs pod/my-apache-dcf6f9587-5wzkv -c httpd
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+[Fri Nov 27 10:11:23.279787 2026] [mpm_event:notice] [pid 1:tid 1] AH00489: Apache/2.4.71 (Unix) configured -- resuming normal operations
+[Fri Nov 27 10:11:23.280312 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+
+# Get logs of all containers in a pod
+> kubectl logs pod/my-apache-dcf6f9587-5wzkv --all-containers
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+[Fri Nov 27 10:11:23.279787 2026] [mpm_event:notice] [pid 1:tid 1] AH00489: Apache/2.4.71 (Unix) configured -- resuming normal operations
+[Fri Nov 27 10:11:23.280312 2026] [core:notice] [pid 1:tid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+
+> kubectl describe deploy my-apache
+Name:                   my-apache
+Namespace:              default
+CreationTimestamp:      Thu, 26 Nov 2026 12:09:06 +0100
+Labels:                 app=my-apache
+
+# Get multiple pods logs
+> kubectl logs -l app=my-apache
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.244.0.5. Set the 'ServerName' directive globally to suppress this message
+
+```
